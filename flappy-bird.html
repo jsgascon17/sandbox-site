@@ -127,6 +127,7 @@
             letter-spacing: 2px;
             box-shadow: 0 5px 0 #33691E;
             transition: all 0.1s;
+            margin: 5px;
         }
 
         .btn:hover {
@@ -139,9 +140,115 @@
             box-shadow: none;
         }
 
+        .btn-secondary {
+            background: linear-gradient(to bottom, #9C27B0, #7B1FA2);
+            border-color: #4A148C;
+            box-shadow: 0 5px 0 #4A148C;
+        }
+
+        .btn-leaderboard {
+            background: linear-gradient(to bottom, #FF9800, #F57C00);
+            border-color: #E65100;
+            box-shadow: 0 5px 0 #E65100;
+        }
+
         .medal {
             font-size: 3rem;
             margin-bottom: 20px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Skins Panel */
+        .skins-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .skin-item {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+
+        .skin-item:hover {
+            transform: scale(1.1);
+        }
+
+        .skin-item.selected {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px #FFD700;
+        }
+
+        .skin-item.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .skin-item.locked::after {
+            content: '🔒';
+            position: absolute;
+            font-size: 1.5rem;
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .leaderboard-entry.you {
+            background: rgba(255,215,0,0.2);
+            border-radius: 5px;
+        }
+
+        .rank {
+            font-weight: bold;
+            width: 30px;
+        }
+
+        .rank.gold { color: #FFD700; }
+        .rank.silver { color: #C0C0C0; }
+        .rank.bronze { color: #CD7F32; }
+
+        .player-name {
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .new-skin-unlock {
+            animation: glow 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px #FFD700; }
+            to { box-shadow: 0 0 30px #FFD700, 0 0 50px #FFA500; }
         }
     </style>
 </head>
@@ -158,10 +265,43 @@
 
     <!-- Start Screen -->
     <div class="overlay" id="startScreen">
-        <div class="bird-icon">🐤</div>
+        <div class="bird-icon" id="startBirdIcon">🐤</div>
         <h2>FLAPPY BIRD</h2>
         <p>Tap to flap! Avoid the pipes!</p>
-        <button class="btn" id="startBtn">START</button>
+        <p style="color: #ff9800;">Beat the BOSS at 50 to unlock skins!</p>
+        <div class="button-row">
+            <button class="btn" id="startBtn">START</button>
+            <button class="btn btn-secondary" id="skinsBtn">SKINS</button>
+            <button class="btn btn-leaderboard" id="leaderboardBtn">TOP 10</button>
+        </div>
+    </div>
+
+    <!-- Skins Screen -->
+    <div class="overlay hidden" id="skinsScreen">
+        <h2>BIRD SKINS</h2>
+        <p>Beat the boss to unlock random skins!</p>
+        <div class="skins-grid" id="skinsGrid"></div>
+        <button class="btn" id="skinsBackBtn">BACK</button>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div class="overlay hidden" id="leaderboardScreen">
+        <h2>TOP 10</h2>
+        <div class="leaderboard" id="leaderboardList">
+            <p style="color: #fff; text-align: center;">Loading...</p>
+        </div>
+        <input type="text" id="playerNameInput" placeholder="Your name" maxlength="12" style="margin-top: 15px; padding: 10px; font-size: 1rem; border-radius: 5px; border: none; width: 200px; text-align: center;">
+        <button class="btn" id="leaderboardBackBtn">BACK</button>
+    </div>
+
+    <!-- Boss Victory Screen -->
+    <div class="overlay hidden" id="victoryScreen">
+        <h2 style="color: #8BC34A;">BOSS DEFEATED!</h2>
+        <div class="medal">🏆</div>
+        <p>You unlocked a new skin!</p>
+        <div id="newSkinDisplay" class="new-skin-unlock" style="font-size: 5rem; margin: 20px;"></div>
+        <p id="skinUnlockName" style="color: #FFD700;"></p>
+        <button class="btn" id="victoryBtn">AWESOME!</button>
     </div>
 
     <!-- Game Over Screen -->
@@ -214,6 +354,29 @@
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
                 osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'fireball') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'bossRoar') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'victory') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523, now);
+                osc.frequency.setValueAtTime(659, now + 0.15);
+                osc.frequency.setValueAtTime(784, now + 0.3);
+                osc.frequency.setValueAtTime(1047, now + 0.45);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                osc.start(now); osc.stop(now + 0.7);
             }
         }
 
@@ -224,6 +387,136 @@
         const ctx = canvas.getContext('2d');
 
         // ============================================
+        // SKINS SYSTEM
+        // ============================================
+        const SKINS = [
+            { id: 'default', name: 'Classic', emoji: '🐤', colors: { body: '#F7DC6F', wing: '#F4D03F', beak: '#E74C3C' }, unlocked: true },
+            { id: 'bluebird', name: 'Blue Jay', emoji: '🐦', colors: { body: '#3498DB', wing: '#2980B9', beak: '#E74C3C' }, unlocked: false },
+            { id: 'redbird', name: 'Cardinal', emoji: '🔴', colors: { body: '#E74C3C', wing: '#C0392B', beak: '#F39C12' }, unlocked: false },
+            { id: 'greenbird', name: 'Parrot', emoji: '🟢', colors: { body: '#27AE60', wing: '#1E8449', beak: '#F39C12' }, unlocked: false },
+            { id: 'pinkbird', name: 'Flamingo', emoji: '🩷', colors: { body: '#FF69B4', wing: '#FF1493', beak: '#FFA500' }, unlocked: false },
+            { id: 'goldbird', name: 'Phoenix', emoji: '✨', colors: { body: '#FFD700', wing: '#FFA500', beak: '#FF4500' }, unlocked: false },
+            { id: 'purplebird', name: 'Mystic', emoji: '🟣', colors: { body: '#9B59B6', wing: '#8E44AD', beak: '#E74C3C' }, unlocked: false },
+            { id: 'robotbird', name: 'Cyber Bird', emoji: '🤖', colors: { body: '#95A5A6', wing: '#7F8C8D', beak: '#2ECC71' }, unlocked: false },
+            { id: 'rainbowbird', name: 'Rainbow', emoji: '🌈', colors: { body: 'rainbow', wing: 'rainbow', beak: '#FF4500' }, unlocked: false }
+        ];
+
+        let currentSkin = 'default';
+        let unlockedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['default'];
+
+        function saveSkins() {
+            localStorage.setItem('flappySkins', JSON.stringify(unlockedSkins));
+            localStorage.setItem('flappyCurrentSkin', currentSkin);
+        }
+
+        function loadSkins() {
+            unlockedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['default'];
+            currentSkin = localStorage.getItem('flappyCurrentSkin') || 'default';
+            SKINS.forEach(skin => {
+                skin.unlocked = unlockedSkins.includes(skin.id);
+            });
+        }
+
+        function unlockRandomSkin() {
+            const lockedSkins = SKINS.filter(s => !s.unlocked);
+            if (lockedSkins.length === 0) return null;
+
+            const randomSkin = lockedSkins[Math.floor(Math.random() * lockedSkins.length)];
+            randomSkin.unlocked = true;
+            unlockedSkins.push(randomSkin.id);
+            saveSkins();
+            return randomSkin;
+        }
+
+        function renderSkinsGrid() {
+            const grid = document.getElementById('skinsGrid');
+            grid.innerHTML = '';
+
+            SKINS.forEach(skin => {
+                const item = document.createElement('div');
+                item.className = 'skin-item' +
+                    (skin.id === currentSkin ? ' selected' : '') +
+                    (!skin.unlocked ? ' locked' : '');
+                item.innerHTML = `<span style="font-size: 2.5rem;">${skin.emoji}</span>`;
+                item.title = skin.name + (skin.unlocked ? '' : ' (Locked)');
+
+                if (skin.unlocked) {
+                    item.addEventListener('click', () => {
+                        currentSkin = skin.id;
+                        saveSkins();
+                        renderSkinsGrid();
+                        updateStartBirdIcon();
+                    });
+                }
+
+                grid.appendChild(item);
+            });
+        }
+
+        function updateStartBirdIcon() {
+            const skin = SKINS.find(s => s.id === currentSkin);
+            document.getElementById('startBirdIcon').textContent = skin ? skin.emoji : '🐤';
+        }
+
+        // ============================================
+        // LEADERBOARD SYSTEM
+        // ============================================
+        const LEADERBOARD_KEY = 'flappyLeaderboard';
+        let leaderboard = [];
+        let playerName = localStorage.getItem('flappyPlayerName') || 'Player';
+
+        function loadLeaderboard() {
+            // For now, use localStorage. In production, you'd use a server.
+            const saved = localStorage.getItem(LEADERBOARD_KEY);
+            leaderboard = saved ? JSON.parse(saved) : [];
+        }
+
+        function saveToLeaderboard(name, score) {
+            loadLeaderboard();
+
+            // Check if player already has an entry
+            const existingIndex = leaderboard.findIndex(e => e.name === name);
+            if (existingIndex >= 0) {
+                // Only update if new score is higher
+                if (score > leaderboard[existingIndex].score) {
+                    leaderboard[existingIndex].score = score;
+                }
+            } else {
+                leaderboard.push({ name, score });
+            }
+
+            // Sort by score descending and keep top 10
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+
+            localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+        }
+
+        function renderLeaderboard() {
+            loadLeaderboard();
+            const list = document.getElementById('leaderboardList');
+
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<p style="color: #fff; text-align: center;">No scores yet! Be the first!</p>';
+                return;
+            }
+
+            list.innerHTML = leaderboard.map((entry, index) => {
+                const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+                const isYou = entry.name === playerName ? ' you' : '';
+                const medal = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+
+                return `
+                    <div class="leaderboard-entry${isYou}">
+                        <span class="rank ${rankClass}">${medal || (index + 1)}</span>
+                        <span class="player-name">${entry.name}</span>
+                        <span class="score">${entry.score}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
         // GAME CONSTANTS
         // ============================================
         const GRAVITY = 0.5;
@@ -231,7 +524,9 @@
         const PIPE_SPEED = 3;
         const PIPE_WIDTH = 70;
         const PIPE_GAP = 160;
-        const PIPE_SPAWN_RATE = 100; // frames
+        const PIPE_SPAWN_RATE = 100;
+        const BOSS_START_SCORE = 50;
+        const BOSS_END_SCORE = 100;
 
         // ============================================
         // GAME STATE
@@ -239,9 +534,12 @@
         let gameRunning = false;
         let gameStarted = false;
         let gamePaused = false;
+        let bossMode = false;
+        let bossDefeated = false;
         let score = 0;
         let highScore = localStorage.getItem('flappyHigh') || 0;
         let frameCount = 0;
+        let bossScoreTimer = 0;
 
         // Bird
         let bird = {
@@ -252,6 +550,19 @@
             velocity: 0,
             rotation: 0
         };
+
+        // Boss
+        let boss = {
+            x: canvas.width - 100,
+            y: canvas.height / 2 - 60,
+            width: 80,
+            height: 100,
+            mouthOpen: false,
+            animFrame: 0
+        };
+
+        // Fireballs
+        let fireballs = [];
 
         // Pipes
         let pipes = [];
@@ -272,25 +583,35 @@
         const highScoreDisplay = document.getElementById('highScore');
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const skinsScreen = document.getElementById('skinsScreen');
+        const leaderboardScreen = document.getElementById('leaderboardScreen');
         const finalScoreDisplay = document.getElementById('finalScore');
         const finalHighScoreDisplay = document.getElementById('finalHighScore');
         const medalDisplay = document.getElementById('medal');
 
+        loadSkins();
         highScoreDisplay.textContent = highScore;
+        updateStartBirdIcon();
 
         // ============================================
         // DRAWING FUNCTIONS
         // ============================================
         function drawBackground() {
-            // Sky
+            // Sky - redder during boss mode
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height - groundHeight);
-            gradient.addColorStop(0, '#4EC0CA');
-            gradient.addColorStop(1, '#71C5CF');
+            if (bossMode) {
+                gradient.addColorStop(0, '#8B0000');
+                gradient.addColorStop(1, '#FF4500');
+            } else {
+                gradient.addColorStop(0, '#4EC0CA');
+                gradient.addColorStop(1, '#71C5CF');
+            }
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height - groundHeight);
 
-            // Clouds
-            ctx.fillStyle = '#fff';
+            // Clouds (darker during boss)
+            ctx.fillStyle = bossMode ? '#555' : '#fff';
             clouds.forEach(cloud => {
                 drawCloud(cloud.x, cloud.y);
             });
@@ -306,16 +627,13 @@
         }
 
         function drawGround() {
-            // Ground base
-            ctx.fillStyle = '#DED895';
+            ctx.fillStyle = bossMode ? '#4a2c2a' : '#DED895';
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
 
-            // Grass top
-            ctx.fillStyle = '#8BC34A';
+            ctx.fillStyle = bossMode ? '#2d1a19' : '#8BC34A';
             ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 20);
 
-            // Ground pattern
-            ctx.fillStyle = '#C4B67A';
+            ctx.fillStyle = bossMode ? '#3d2422' : '#C4B67A';
             for (let x = groundX % 40 - 40; x < canvas.width; x += 40) {
                 ctx.fillRect(x, canvas.height - groundHeight + 25, 20, 10);
                 ctx.fillRect(x + 20, canvas.height - groundHeight + 45, 20, 10);
@@ -323,21 +641,37 @@
         }
 
         function drawBird() {
+            const skin = SKINS.find(s => s.id === currentSkin) || SKINS[0];
+
             ctx.save();
             ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
 
-            // Rotate based on velocity
             bird.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.05));
             ctx.rotate(bird.rotation);
 
             // Body
-            ctx.fillStyle = '#F7DC6F';
+            if (skin.colors.body === 'rainbow') {
+                const gradient = ctx.createLinearGradient(-bird.width/2, 0, bird.width/2, 0);
+                gradient.addColorStop(0, '#ff0000');
+                gradient.addColorStop(0.2, '#ff8800');
+                gradient.addColorStop(0.4, '#ffff00');
+                gradient.addColorStop(0.6, '#00ff00');
+                gradient.addColorStop(0.8, '#0088ff');
+                gradient.addColorStop(1, '#8800ff');
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = skin.colors.body;
+            }
             ctx.beginPath();
             ctx.ellipse(0, 0, bird.width / 2, bird.height / 2, 0, 0, Math.PI * 2);
             ctx.fill();
 
             // Wing
-            ctx.fillStyle = '#F4D03F';
+            if (skin.colors.wing === 'rainbow') {
+                ctx.fillStyle = '#00ff88';
+            } else {
+                ctx.fillStyle = skin.colors.wing;
+            }
             ctx.beginPath();
             const wingY = Math.sin(frameCount * 0.3) * 3;
             ctx.ellipse(-5, wingY, 12, 8, -0.3, 0, Math.PI * 2);
@@ -355,7 +689,7 @@
             ctx.fill();
 
             // Beak
-            ctx.fillStyle = '#E74C3C';
+            ctx.fillStyle = skin.colors.beak;
             ctx.beginPath();
             ctx.moveTo(18, 0);
             ctx.lineTo(28, 3);
@@ -372,14 +706,10 @@
             const pipeLight = '#8BC34A';
 
             // Top pipe
-            // Main body
             ctx.fillStyle = pipeColor;
             ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
-
-            // Cap
             ctx.fillRect(pipe.x - 5, pipe.topHeight - 30, PIPE_WIDTH + 10, 30);
 
-            // Shading
             ctx.fillStyle = pipeDark;
             ctx.fillRect(pipe.x + PIPE_WIDTH - 10, 0, 10, pipe.topHeight);
             ctx.fillRect(pipe.x + PIPE_WIDTH - 5, pipe.topHeight - 30, 10, 30);
@@ -392,14 +722,10 @@
             const bottomY = pipe.topHeight + PIPE_GAP;
             const bottomHeight = canvas.height - groundHeight - bottomY;
 
-            // Main body
             ctx.fillStyle = pipeColor;
             ctx.fillRect(pipe.x, bottomY, PIPE_WIDTH, bottomHeight);
-
-            // Cap
             ctx.fillRect(pipe.x - 5, bottomY, PIPE_WIDTH + 10, 30);
 
-            // Shading
             ctx.fillStyle = pipeDark;
             ctx.fillRect(pipe.x + PIPE_WIDTH - 10, bottomY, 10, bottomHeight);
             ctx.fillRect(pipe.x + PIPE_WIDTH - 5, bottomY, 10, 30);
@@ -407,6 +733,127 @@
             ctx.fillStyle = pipeLight;
             ctx.fillRect(pipe.x, bottomY + 30, 10, bottomHeight - 30);
             ctx.fillRect(pipe.x - 5, bottomY, 10, 30);
+        }
+
+        function drawBoss() {
+            const x = boss.x;
+            const y = boss.y + Math.sin(frameCount * 0.05) * 10;
+            boss.animFrame++;
+
+            // Body (Bowser-like)
+            ctx.fillStyle = '#228B22'; // Green shell
+            ctx.beginPath();
+            ctx.ellipse(x + boss.width/2, y + boss.height/2, boss.width/2, boss.height/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shell spikes
+            ctx.fillStyle = '#FFD700';
+            for (let i = 0; i < 5; i++) {
+                const spikeX = x + 15 + i * 15;
+                const spikeY = y + 10 + Math.sin(i) * 5;
+                ctx.beginPath();
+                ctx.moveTo(spikeX, spikeY);
+                ctx.lineTo(spikeX - 8, spikeY + 15);
+                ctx.lineTo(spikeX + 8, spikeY + 15);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Head
+            ctx.fillStyle = '#FFA500';
+            ctx.beginPath();
+            ctx.arc(x + 20, y + 40, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Horns
+            ctx.fillStyle = '#F5F5DC';
+            ctx.beginPath();
+            ctx.moveTo(x + 5, y + 25);
+            ctx.lineTo(x - 10, y + 5);
+            ctx.lineTo(x + 15, y + 30);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x + 35, y + 25);
+            ctx.lineTo(x + 50, y + 5);
+            ctx.lineTo(x + 25, y + 30);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x + 12, y + 35, 8, 0, Math.PI * 2);
+            ctx.arc(x + 28, y + 35, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.arc(x + 12, y + 35, 4, 0, Math.PI * 2);
+            ctx.arc(x + 28, y + 35, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyebrows (angry)
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 5, y + 25, 15, 4);
+            ctx.fillRect(x + 20, y + 25, 15, 4);
+
+            // Mouth
+            const mouthOpen = Math.sin(frameCount * 0.1) > 0.5;
+            ctx.fillStyle = '#8B0000';
+            if (mouthOpen) {
+                ctx.fillRect(x + 8, y + 50, 25, 15);
+                // Teeth
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x + 10, y + 50, 5, 8);
+                ctx.fillRect(x + 18, y + 50, 5, 8);
+                ctx.fillRect(x + 26, y + 50, 5, 8);
+            } else {
+                ctx.fillRect(x + 8, y + 55, 25, 5);
+            }
+
+            // Health bar
+            const healthPercent = (BOSS_END_SCORE - score) / (BOSS_END_SCORE - BOSS_START_SCORE);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x - 10, y - 20, boss.width + 20, 10);
+            ctx.fillStyle = healthPercent > 0.3 ? '#f00' : '#ff0';
+            ctx.fillRect(x - 10, y - 20, (boss.width + 20) * healthPercent, 10);
+
+            // BOSS label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('BOSS', x + boss.width/2, y - 25);
+        }
+
+        function drawFireball(fireball) {
+            ctx.save();
+            ctx.translate(fireball.x, fireball.y);
+            ctx.rotate(fireball.rotation);
+
+            // Fireball body
+            const gradient = ctx.createRadialGradient(0, 0, 5, 0, 0, 20);
+            gradient.addColorStop(0, '#ffff00');
+            gradient.addColorStop(0.5, '#ff8800');
+            gradient.addColorStop(1, '#ff0000');
+            ctx.fillStyle = gradient;
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Flame trail
+            ctx.fillStyle = '#ff4400';
+            ctx.beginPath();
+            ctx.moveTo(15, 0);
+            ctx.lineTo(30, -8);
+            ctx.lineTo(25, 0);
+            ctx.lineTo(30, 8);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
         }
 
         function drawScore() {
@@ -417,6 +864,13 @@
             ctx.textAlign = 'center';
             ctx.strokeText(score, canvas.width / 2, 60);
             ctx.fillText(score, canvas.width / 2, 60);
+
+            // Boss mode indicator
+            if (bossMode) {
+                ctx.fillStyle = '#ff0';
+                ctx.font = 'bold 20px Courier New';
+                ctx.fillText('SURVIVE TO ' + BOSS_END_SCORE + '!', canvas.width / 2, 90);
+            }
         }
 
         // ============================================
@@ -426,29 +880,26 @@
             bird.velocity += GRAVITY;
             bird.y += bird.velocity;
 
-            // Ceiling
             if (bird.y < 0) {
                 bird.y = 0;
                 bird.velocity = 0;
             }
 
-            // Ground collision
             if (bird.y + bird.height > canvas.height - groundHeight) {
                 gameOver();
             }
         }
 
         function updatePipes() {
-            // Move pipes
+            if (bossMode) return; // No pipes during boss
+
             pipes.forEach(pipe => {
                 pipe.x -= PIPE_SPEED;
             });
 
-            // Remove off-screen pipes
             pipes = pipes.filter(pipe => pipe.x + PIPE_WIDTH > 0);
 
-            // Spawn new pipes
-            if (frameCount % PIPE_SPAWN_RATE === 0) {
+            if (frameCount % PIPE_SPAWN_RATE === 0 && score < BOSS_START_SCORE) {
                 const minHeight = 80;
                 const maxHeight = canvas.height - groundHeight - PIPE_GAP - minHeight;
                 const topHeight = minHeight + Math.random() * (maxHeight - minHeight);
@@ -460,15 +911,65 @@
                 });
             }
 
-            // Check for score
             pipes.forEach(pipe => {
                 if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
                     pipe.passed = true;
                     score++;
                     scoreDisplay.textContent = score;
                     playSound('score');
+
+                    // Check for boss mode
+                    if (score >= BOSS_START_SCORE && !bossMode) {
+                        startBossMode();
+                    }
                 }
             });
+        }
+
+        function startBossMode() {
+            bossMode = true;
+            pipes = []; // Clear remaining pipes
+            fireballs = [];
+            bossScoreTimer = 0;
+            playSound('bossRoar');
+        }
+
+        function updateBoss() {
+            if (!bossMode) return;
+
+            // Increment score every 60 frames (1 second)
+            bossScoreTimer++;
+            if (bossScoreTimer >= 60) {
+                bossScoreTimer = 0;
+                score++;
+                scoreDisplay.textContent = score;
+
+                if (score >= BOSS_END_SCORE) {
+                    bossVictory();
+                    return;
+                }
+            }
+
+            // Spawn fireballs
+            if (frameCount % 45 === 0) { // Every 0.75 seconds
+                const fireballY = 100 + Math.random() * (canvas.height - groundHeight - 200);
+                fireballs.push({
+                    x: boss.x,
+                    y: fireballY,
+                    speed: 4 + Math.random() * 2,
+                    rotation: 0
+                });
+                playSound('fireball');
+            }
+
+            // Update fireballs
+            fireballs.forEach(fb => {
+                fb.x -= fb.speed;
+                fb.rotation += 0.2;
+            });
+
+            // Remove off-screen fireballs
+            fireballs = fireballs.filter(fb => fb.x > -30);
         }
 
         function updateClouds() {
@@ -489,19 +990,29 @@
         }
 
         function checkCollision() {
+            // Pipe collision
             pipes.forEach(pipe => {
-                // Top pipe collision
                 if (bird.x + bird.width > pipe.x &&
                     bird.x < pipe.x + PIPE_WIDTH &&
                     bird.y < pipe.topHeight) {
                     gameOver();
                 }
 
-                // Bottom pipe collision
                 const bottomY = pipe.topHeight + PIPE_GAP;
                 if (bird.x + bird.width > pipe.x &&
                     bird.x < pipe.x + PIPE_WIDTH &&
                     bird.y + bird.height > bottomY) {
+                    gameOver();
+                }
+            });
+
+            // Fireball collision
+            fireballs.forEach(fb => {
+                const dx = (bird.x + bird.width/2) - fb.x;
+                const dy = (bird.y + bird.height/2) - fb.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+
+                if (distance < 25) { // Fireball radius + some buffer
                     gameOver();
                 }
             });
@@ -521,9 +1032,10 @@
             gamePaused = !gamePaused;
         }
 
-        function gameOver() {
+        function bossVictory() {
             gameRunning = false;
-            playSound('hit');
+            bossDefeated = true;
+            playSound('victory');
 
             // Update high score
             if (score > highScore) {
@@ -532,7 +1044,35 @@
                 highScoreDisplay.textContent = highScore;
             }
 
-            // Medal based on score
+            // Save to leaderboard
+            saveToLeaderboard(playerName, score);
+
+            // Unlock a random skin
+            const newSkin = unlockRandomSkin();
+            if (newSkin) {
+                document.getElementById('newSkinDisplay').textContent = newSkin.emoji;
+                document.getElementById('skinUnlockName').textContent = newSkin.name;
+            } else {
+                document.getElementById('newSkinDisplay').textContent = '🎉';
+                document.getElementById('skinUnlockName').textContent = 'All skins unlocked!';
+            }
+
+            victoryScreen.classList.remove('hidden');
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            playSound('hit');
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('flappyHigh', highScore);
+                highScoreDisplay.textContent = highScore;
+            }
+
+            // Save to leaderboard
+            saveToLeaderboard(playerName, score);
+
             let medal = '';
             if (score >= 40) medal = '🏆';
             else if (score >= 30) medal = '🥇';
@@ -548,19 +1088,23 @@
         function startGame() {
             initAudio();
 
-            // Reset
             score = 0;
             frameCount = 0;
             pipes = [];
+            fireballs = [];
             bird.y = canvas.height / 2;
             bird.velocity = 0;
             bird.rotation = 0;
             gamePaused = false;
+            bossMode = false;
+            bossDefeated = false;
+            bossScoreTimer = 0;
 
             scoreDisplay.textContent = score;
 
             startScreen.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
+            victoryScreen.classList.add('hidden');
             gameRunning = true;
             gameStarted = true;
 
@@ -573,27 +1117,32 @@
         function gameLoop() {
             frameCount++;
 
-            // Clear
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw
             drawBackground();
-            pipes.forEach(drawPipe);
+            if (!bossMode) {
+                pipes.forEach(drawPipe);
+            } else {
+                drawBoss();
+                fireballs.forEach(drawFireball);
+            }
             drawGround();
             drawBird();
             drawScore();
 
             if (gameRunning) {
                 if (!gamePaused) {
-                    // Update
                     updateBird();
-                    updatePipes();
+                    if (!bossMode) {
+                        updatePipes();
+                    } else {
+                        updateBoss();
+                    }
                     updateClouds();
                     updateGround();
                     checkCollision();
                 }
 
-                // Pause overlay
                 if (gamePaused) {
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -609,7 +1158,7 @@
             }
         }
 
-        // Idle animation before game starts
+        // Idle animation
         function idleLoop() {
             if (gameStarted) return;
 
@@ -618,7 +1167,6 @@
             drawBackground();
             drawGround();
 
-            // Hovering bird
             bird.y = canvas.height / 2 + Math.sin(frameCount * 0.05) * 20;
             drawBird();
 
@@ -627,7 +1175,6 @@
             requestAnimationFrame(idleLoop);
         }
 
-        // Start idle animation
         idleLoop();
 
         // ============================================
@@ -649,8 +1196,45 @@
             flap();
         });
 
+        // Buttons
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('victoryBtn').addEventListener('click', () => {
+            victoryScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            gameStarted = false;
+            idleLoop();
+        });
+
+        // Skins
+        document.getElementById('skinsBtn').addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            renderSkinsGrid();
+            skinsScreen.classList.remove('hidden');
+        });
+
+        document.getElementById('skinsBackBtn').addEventListener('click', () => {
+            skinsScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+        // Leaderboard
+        document.getElementById('leaderboardBtn').addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            document.getElementById('playerNameInput').value = playerName;
+            renderLeaderboard();
+            leaderboardScreen.classList.remove('hidden');
+        });
+
+        document.getElementById('leaderboardBackBtn').addEventListener('click', () => {
+            // Save player name
+            const newName = document.getElementById('playerNameInput').value.trim() || 'Player';
+            playerName = newName;
+            localStorage.setItem('flappyPlayerName', playerName);
+
+            leaderboardScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
 
         // Sound toggle
         document.getElementById('soundBtn').addEventListener('click', () => {
