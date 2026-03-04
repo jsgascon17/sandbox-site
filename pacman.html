@@ -517,37 +517,74 @@
             return maze[row][col];
         }
 
-        function canMove(x, y, dir) {
-            const nextX = x + dir.x * TILE_SIZE / 2 + TILE_SIZE / 2;
-            const nextY = y + dir.y * TILE_SIZE / 2 + TILE_SIZE / 2;
-            const tile = getTile(nextX, nextY);
-            return tile !== 1;
+        function isWall(row, col) {
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false; // Allow tunnels
+            return maze[row][col] === 1;
         }
 
-        function isAlignedToTile(pos) {
-            return Math.abs(pos % TILE_SIZE - TILE_SIZE / 2) < pacman.speed ||
-                   Math.abs(pos % TILE_SIZE) < pacman.speed;
+        function canMoveInDirection(row, col, dir) {
+            const nextRow = row + dir.y;
+            const nextCol = col + dir.x;
+            return !isWall(nextRow, nextCol);
         }
 
         function updatePacman() {
-            // Try to change direction if aligned
+            // Get current tile
+            const col = Math.round(pacman.x / TILE_SIZE);
+            const row = Math.round(pacman.y / TILE_SIZE);
+
+            // Center of current tile
+            const centerX = col * TILE_SIZE;
+            const centerY = row * TILE_SIZE;
+
+            // Check if close to tile center (for turning)
+            const nearCenterX = Math.abs(pacman.x - centerX) < pacman.speed + 1;
+            const nearCenterY = Math.abs(pacman.y - centerY) < pacman.speed + 1;
+
+            // Try to apply queued direction change
             if (pacman.nextDir.x !== 0 || pacman.nextDir.y !== 0) {
-                if (isAlignedToTile(pacman.x) && isAlignedToTile(pacman.y)) {
-                    if (canMove(pacman.x, pacman.y, pacman.nextDir)) {
-                        pacman.dir = { ...pacman.nextDir };
+                // For turning perpendicular, need to be near center
+                const turningPerpendicular =
+                    (pacman.dir.x !== 0 && pacman.nextDir.y !== 0) ||
+                    (pacman.dir.y !== 0 && pacman.nextDir.x !== 0);
+
+                const canTurn = turningPerpendicular ? (nearCenterX && nearCenterY) : true;
+
+                if (canTurn && canMoveInDirection(row, col, pacman.nextDir)) {
+                    // Snap to grid when turning
+                    if (turningPerpendicular) {
+                        pacman.x = centerX;
+                        pacman.y = centerY;
                     }
+                    pacman.dir = { ...pacman.nextDir };
                 }
             }
 
             // Move in current direction
             if (pacman.dir.x !== 0 || pacman.dir.y !== 0) {
-                const nextX = pacman.x + pacman.dir.x * pacman.speed;
-                const nextY = pacman.y + pacman.dir.y * pacman.speed;
+                // Calculate next position
+                let nextX = pacman.x + pacman.dir.x * pacman.speed;
+                let nextY = pacman.y + pacman.dir.y * pacman.speed;
 
-                // Check if can continue
-                if (canMove(pacman.x, pacman.y, pacman.dir)) {
+                // Check for wall collision ahead
+                const checkCol = Math.round(nextX / TILE_SIZE) + pacman.dir.x;
+                const checkRow = Math.round(nextY / TILE_SIZE) + pacman.dir.y;
+
+                // Check the tile we're moving into
+                const nextTileCol = Math.floor((nextX + TILE_SIZE / 2 + pacman.dir.x * TILE_SIZE / 2) / TILE_SIZE);
+                const nextTileRow = Math.floor((nextY + TILE_SIZE / 2 + pacman.dir.y * TILE_SIZE / 2) / TILE_SIZE);
+
+                if (!isWall(nextTileRow, nextTileCol)) {
                     pacman.x = nextX;
                     pacman.y = nextY;
+                } else {
+                    // Stop at tile center when hitting wall
+                    if (pacman.dir.x !== 0) {
+                        pacman.x = Math.round(pacman.x / TILE_SIZE) * TILE_SIZE;
+                    }
+                    if (pacman.dir.y !== 0) {
+                        pacman.y = Math.round(pacman.y / TILE_SIZE) * TILE_SIZE;
+                    }
                 }
             }
 
@@ -556,17 +593,17 @@
             if (pacman.x > canvas.width) pacman.x = -TILE_SIZE;
 
             // Eat dots
-            const col = Math.floor((pacman.x + TILE_SIZE / 2) / TILE_SIZE);
-            const row = Math.floor((pacman.y + TILE_SIZE / 2) / TILE_SIZE);
+            const eatCol = Math.floor((pacman.x + TILE_SIZE / 2) / TILE_SIZE);
+            const eatRow = Math.floor((pacman.y + TILE_SIZE / 2) / TILE_SIZE);
 
-            if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
-                const tile = maze[row][col];
+            if (eatRow >= 0 && eatRow < ROWS && eatCol >= 0 && eatCol < COLS) {
+                const tile = maze[eatRow][eatCol];
                 if (tile === 0) {
-                    maze[row][col] = 2;
+                    maze[eatRow][eatCol] = 2;
                     score += 10;
                     dotsEaten++;
                 } else if (tile === 3) {
-                    maze[row][col] = 2;
+                    maze[eatRow][eatCol] = 2;
                     score += 50;
                     dotsEaten++;
                     // Frighten ghosts!
