@@ -355,11 +355,11 @@
         let highScore = localStorage.getItem('platformerHigh2') || 0;
         let cameraX = 0;
 
-        // Abilities
+        // Abilities - all available from the start!
         let abilities = {
-            doubleJump: false,
-            spin: false,
-            dash: false
+            doubleJump: true,
+            spin: true,
+            dash: true
         };
 
         // Player
@@ -372,7 +372,7 @@
             vy: 0,
             onGround: false,
             facingRight: true,
-            jumpsLeft: 1,
+            jumpsLeft: 2,
             isSpinning: false,
             spinFrame: 0,
             isDashing: false,
@@ -1087,20 +1087,17 @@
             gameRunning = false;
             document.getElementById('levelCoins').textContent = coins;
 
-            // Unlock abilities
-            let unlockText = '';
-            if (currentLevel === 1 && !abilities.doubleJump) {
-                abilities.doubleJump = true;
-                unlockText = '🎉 DOUBLE JUMP UNLOCKED!<br>Press JUMP while in the air!';
-            } else if (currentLevel === 2 && !abilities.spin) {
-                abilities.spin = true;
-                unlockText = '🎉 SPIN ATTACK UNLOCKED!<br>Press X to spin and defeat enemies!';
-            } else if (currentLevel === 3 && !abilities.dash) {
-                abilities.dash = true;
-                unlockText = '🎉 DASH UNLOCKED!<br>Press Z to dash forward!';
+            // Show tips for abilities
+            let tipText = '';
+            if (currentLevel === 1) {
+                tipText = '💡 TIP: Use DOUBLE JUMP to reach higher platforms!';
+            } else if (currentLevel === 2) {
+                tipText = '💡 TIP: Use SPIN [X] to defeat enemies from any side!';
+            } else if (currentLevel === 3) {
+                tipText = '💡 TIP: Use DASH [Z] to cross big gaps quickly!';
             }
 
-            unlockMsg.innerHTML = unlockText;
+            unlockMsg.innerHTML = tipText;
             updateAbilityDisplay();
             levelScreen.classList.remove('hidden');
         }
@@ -1135,10 +1132,10 @@
             lives = 3;
             currentLevel = 1;
 
-            // Reset abilities
-            abilities.doubleJump = false;
-            abilities.spin = false;
-            abilities.dash = false;
+            // All abilities available from start
+            abilities.doubleJump = true;
+            abilities.spin = true;
+            abilities.dash = true;
             updateAbilityDisplay();
 
             coinsDisplay.textContent = totalCoins;
