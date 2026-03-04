@@ -224,7 +224,8 @@
     <canvas id="gameCanvas" width="448" height="496"></canvas>
 
     <div class="instructions">
-        <span>ARROW KEYS</span> or <span>WASD</span> to move
+        <span>ARROW KEYS</span> or <span>WASD</span> to move | <span>P</span> Pause
+        <button id="soundBtn" style="background: #222; border: 1px solid #ffff00; color: #ffff00; padding: 3px 8px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
 
     <div class="mobile-controls">
@@ -264,6 +265,64 @@
     </div>
 
     <script>
+        // ============================================
+        // AUDIO SYSTEM
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'chomp') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(250, now + 0.05);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'power') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'eatGhost') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'death') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'levelComplete') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523, now);
+                osc.frequency.setValueAtTime(659, now + 0.2);
+                osc.frequency.setValueAtTime(784, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        }
+
         // ============================================
         // CANVAS SETUP
         // ============================================
@@ -321,6 +380,7 @@
         let lives = 3;
         let level = 1;
         let gameRunning = false;
+        let gamePaused = false;
         let totalDots = 0;
         let dotsEaten = 0;
         let frightened = false;
@@ -602,8 +662,10 @@
                     maze[eatRow][eatCol] = 2;
                     score += 10;
                     dotsEaten++;
+                    playSound('chomp');
                 } else if (tile === 3) {
                     maze[eatRow][eatCol] = 2;
+                    playSound('power');
                     score += 50;
                     dotsEaten++;
                     // Frighten ghosts!
@@ -736,6 +798,7 @@
                     if (frightened) {
                         // Eat ghost
                         score += 200;
+                        playSound('eatGhost');
                         ghost.x = 13.5 * TILE_SIZE;
                         ghost.y = 14 * TILE_SIZE;
                         ghost.inHouse = true;
@@ -771,6 +834,7 @@
         function loseLife() {
             lives--;
             updateLivesDisplay();
+            playSound('death');
 
             if (lives <= 0) {
                 gameOver();
@@ -807,6 +871,7 @@
 
         function levelComplete() {
             gameRunning = false;
+            playSound('levelComplete');
             level++;
             ghostSpeed = Math.min(4, 2 + level * 0.3);
             document.getElementById('nextLevel').textContent = level;
@@ -814,10 +879,13 @@
         }
 
         function startGame() {
+            initAudio();
+
             score = 0;
             lives = 3;
             level = 1;
             ghostSpeed = 2;
+            gamePaused = false;
 
             scoreDisplay.textContent = score;
             levelDisplay.textContent = level;
@@ -832,6 +900,11 @@
 
             gameRunning = true;
             gameLoop();
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
         }
 
         function nextLevel() {
@@ -858,9 +931,23 @@
             drawPacman();
             ghosts.forEach(drawGhost);
 
-            // Update
-            updatePacman();
-            updateGhosts();
+            if (!gamePaused) {
+                // Update
+                updatePacman();
+                updateGhosts();
+            }
+
+            // Pause overlay
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffff00';
+                ctx.font = 'bold 40px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+                ctx.font = '16px Courier New';
+                ctx.fillText('Press P to resume', canvas.width/2, canvas.height/2 + 30);
+            }
 
             requestAnimationFrame(gameLoop);
         }
@@ -869,7 +956,13 @@
         // INPUT
         // ============================================
         document.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
+            // Pause can work anytime during game
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                togglePause();
+                return;
+            }
+
+            if (!gameRunning || gamePaused) return;
 
             switch (e.code) {
                 case 'ArrowLeft':
@@ -905,6 +998,12 @@
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', startGame);
         document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+
+        // Sound toggle
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        });
     </script>
 </body>
 </html>

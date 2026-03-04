@@ -152,7 +152,8 @@
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
     <div class="instructions">
-        <span>SPACE</span> or <span>CLICK</span> to Flap
+        <span>SPACE</span> or <span>CLICK</span> to Flap | <span>P</span> Pause
+        <button id="soundBtn" style="background: #543847; border: 2px solid #fff; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
 
     <!-- Start Screen -->
@@ -174,6 +175,49 @@
 
     <script>
         // ============================================
+        // AUDIO SYSTEM
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'flap') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'score') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.setValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'hit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+        }
+
+        // ============================================
         // CANVAS SETUP
         // ============================================
         const canvas = document.getElementById('gameCanvas');
@@ -194,6 +238,7 @@
         // ============================================
         let gameRunning = false;
         let gameStarted = false;
+        let gamePaused = false;
         let score = 0;
         let highScore = localStorage.getItem('flappyHigh') || 0;
         let frameCount = 0;
@@ -421,6 +466,7 @@
                     pipe.passed = true;
                     score++;
                     scoreDisplay.textContent = score;
+                    playSound('score');
                 }
             });
         }
@@ -465,12 +511,19 @@
         // GAME FLOW
         // ============================================
         function flap() {
-            if (!gameRunning) return;
+            if (!gameRunning || gamePaused) return;
             bird.velocity = FLAP_POWER;
+            playSound('flap');
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
         }
 
         function gameOver() {
             gameRunning = false;
+            playSound('hit');
 
             // Update high score
             if (score > highScore) {
@@ -493,6 +546,8 @@
         }
 
         function startGame() {
+            initAudio();
+
             // Reset
             score = 0;
             frameCount = 0;
@@ -500,6 +555,7 @@
             bird.y = canvas.height / 2;
             bird.velocity = 0;
             bird.rotation = 0;
+            gamePaused = false;
 
             scoreDisplay.textContent = score;
 
@@ -528,12 +584,26 @@
             drawScore();
 
             if (gameRunning) {
-                // Update
-                updateBird();
-                updatePipes();
-                updateClouds();
-                updateGround();
-                checkCollision();
+                if (!gamePaused) {
+                    // Update
+                    updateBird();
+                    updatePipes();
+                    updateClouds();
+                    updateGround();
+                    checkCollision();
+                }
+
+                // Pause overlay
+                if (gamePaused) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 40px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+                    ctx.font = '16px Courier New';
+                    ctx.fillText('Press P to resume', canvas.width/2, canvas.height/2 + 30);
+                }
 
                 requestAnimationFrame(gameLoop);
             }
@@ -568,6 +638,9 @@
                 e.preventDefault();
                 flap();
             }
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                togglePause();
+            }
         });
 
         canvas.addEventListener('click', flap);
@@ -578,6 +651,12 @@
 
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        // Sound toggle
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        });
     </script>
 </body>
 </html>

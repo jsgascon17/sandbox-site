@@ -290,8 +290,10 @@
     <div class="controls">
         <span>←</span> <span>→</span> Move |
         <span>SPACE</span> Jump |
-        <span>X</span> Spin Attack |
-        <span>Z</span> Dash
+        <span>X</span> Spin |
+        <span>Z</span> Dash |
+        <span>P</span> Pause
+        <button id="soundBtn" style="background: #333; border: 2px solid #654321; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
 
     <!-- Mobile Controls -->
@@ -329,6 +331,100 @@
 
     <script>
         // ============================================
+        // AUDIO SYSTEM
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'jump') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'coin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.setValueAtTime(1000, now + 0.05);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'stomp') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'hurt') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'spin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'dash') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'levelComplete') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523, now);
+                osc.frequency.setValueAtTime(659, now + 0.15);
+                osc.frequency.setValueAtTime(784, now + 0.3);
+                osc.frequency.setValueAtTime(1047, now + 0.45);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'gameOver') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'bossHit') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'bossDefeat') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.5);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        // ============================================
         // CANVAS SETUP
         // ============================================
         const canvas = document.getElementById('gameCanvas');
@@ -348,12 +444,18 @@
         // GAME STATE
         // ============================================
         let gameRunning = false;
+        let gamePaused = false;
         let coins = 0;
         let totalCoins = 0;
         let lives = 3;
         let currentLevel = 1;
         let highScore = localStorage.getItem('platformerHigh2') || 0;
         let cameraX = 0;
+
+        // Boss state
+        let boss = null;
+        let bossActive = false;
+        const BOSS_LEVEL_INTERVAL = 4; // Boss on levels 4, 8, 12...
 
         // Abilities - all available from the start!
         let abilities = {
@@ -424,6 +526,12 @@
         // LEVEL GENERATION
         // ============================================
         function generateLevel(levelNum) {
+            // Check for boss level
+            if (levelNum > 1 && levelNum % BOSS_LEVEL_INTERVAL === 0) {
+                generateBossLevel();
+                return;
+            }
+
             platforms = [];
             coinList = [];
             enemies = [];
@@ -431,6 +539,8 @@
             spikes = [];
             cameraX = 0;
             particles = [];
+            boss = null;
+            bossActive = false;
 
             // Level scaling
             levelWidth = 1500 + levelNum * 400;
@@ -583,6 +693,200 @@
                 ctx.fillRect(p.x - cameraX, p.y, p.size, p.size);
             });
             ctx.globalAlpha = 1;
+        }
+
+        // ============================================
+        // BOSS FUNCTIONS
+        // ============================================
+        function createBoss() {
+            boss = {
+                x: 500,
+                y: 150,
+                width: 80,
+                height: 80,
+                health: 5 + Math.floor(currentLevel / 4) * 2,
+                maxHealth: 5 + Math.floor(currentLevel / 4) * 2,
+                vx: 2,
+                vy: 0,
+                phase: 1,
+                attackTimer: 0,
+                hitCooldown: 0,
+                jumping: false
+            };
+            bossActive = true;
+        }
+
+        function generateBossLevel() {
+            platforms = [];
+            coinList = [];
+            enemies = [];
+            movingPlatforms = [];
+            spikes = [];
+            cameraX = 0;
+            particles = [];
+
+            levelWidth = 800; // Small arena
+
+            // Boss arena - flat ground with gaps
+            platforms.push({ x: 0, y: 400, width: 300, height: 50, color: '#8B4513' });
+            platforms.push({ x: 350, y: 400, width: 100, height: 50, color: '#8B4513' });
+            platforms.push({ x: 500, y: 400, width: 300, height: 50, color: '#8B4513' });
+
+            // Side platforms
+            platforms.push({ x: 50, y: 280, width: 150, height: 25, color: '#8B4513' });
+            platforms.push({ x: 600, y: 280, width: 150, height: 25, color: '#8B4513' });
+
+            // Top platform
+            platforms.push({ x: 300, y: 180, width: 200, height: 25, color: '#8B4513' });
+
+            flag = null; // No flag in boss level
+
+            // Reset player
+            player.x = 50;
+            player.y = 300;
+            player.vx = 0;
+            player.vy = 0;
+            player.isSpinning = false;
+            player.isDashing = false;
+            player.invincible = 0;
+            player.jumpsLeft = abilities.doubleJump ? 2 : 1;
+
+            createBoss();
+        }
+
+        function updateBoss() {
+            if (!boss || boss.hitCooldown > 0) boss.hitCooldown--;
+
+            // Movement AI
+            const distToPlayer = player.x - boss.x;
+
+            if (boss.phase === 1) {
+                // Phase 1: Chase player
+                boss.vx = distToPlayer > 0 ? 2 : -2;
+
+                // Jump if player is above
+                if (player.y < boss.y - 50 && boss.y >= 350 && !boss.jumping) {
+                    boss.vy = -12;
+                    boss.jumping = true;
+                }
+            } else {
+                // Phase 2 (low health): More aggressive
+                boss.vx = distToPlayer > 0 ? 3.5 : -3.5;
+
+                if (player.y < boss.y - 30 && boss.y >= 350 && !boss.jumping) {
+                    boss.vy = -14;
+                    boss.jumping = true;
+                }
+            }
+
+            // Apply physics
+            boss.vy += GRAVITY;
+            boss.x += boss.vx;
+            boss.y += boss.vy;
+
+            // Platform collision
+            platforms.forEach(plat => {
+                if (boss.x + boss.width > plat.x && boss.x < plat.x + plat.width) {
+                    if (boss.y + boss.height > plat.y && boss.y + boss.height < plat.y + plat.height + boss.vy) {
+                        boss.y = plat.y - boss.height;
+                        boss.vy = 0;
+                        boss.jumping = false;
+                    }
+                }
+            });
+
+            // Keep in bounds
+            if (boss.x < 0) { boss.x = 0; boss.vx *= -1; }
+            if (boss.x + boss.width > levelWidth) { boss.x = levelWidth - boss.width; boss.vx *= -1; }
+
+            // Check health for phase change
+            if (boss.health <= boss.maxHealth / 2) {
+                boss.phase = 2;
+            }
+
+            // Check collision with player
+            if (boss.hitCooldown <= 0 &&
+                player.x + player.width > boss.x && player.x < boss.x + boss.width &&
+                player.y + player.height > boss.y && player.y < boss.y + boss.height) {
+
+                // Player attacking boss?
+                if ((player.isSpinning || (player.vy > 0 && player.y < boss.y)) && player.invincible <= 0) {
+                    boss.health--;
+                    boss.hitCooldown = 30;
+                    playSound('bossHit');
+                    spawnParticles(boss.x + boss.width/2, boss.y, '#ff0', 10);
+
+                    // Bounce player
+                    player.vy = -10;
+
+                    if (boss.health <= 0) {
+                        // Boss defeated!
+                        playSound('bossDefeat');
+                        spawnParticles(boss.x + boss.width/2, boss.y + boss.height/2, '#ff0', 30);
+                        boss = null;
+                        bossActive = false;
+                        levelComplete();
+                    }
+                } else if (player.invincible <= 0) {
+                    // Player gets hurt
+                    playerHit();
+                }
+            }
+        }
+
+        function drawBoss() {
+            if (!boss) return;
+
+            const x = boss.x - cameraX;
+            const flash = boss.hitCooldown > 0 && Math.floor(boss.hitCooldown / 3) % 2;
+
+            // Body
+            ctx.fillStyle = flash ? '#fff' : (boss.phase === 2 ? '#ff3333' : '#cc0000');
+            ctx.fillRect(x, boss.y, boss.width, boss.height);
+
+            // Angry eyes
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(x + 15, boss.y + 20, 20, 20);
+            ctx.fillRect(x + 45, boss.y + 20, 20, 20);
+
+            ctx.fillStyle = '#000';
+            const eyeOffset = boss.vx > 0 ? 5 : -5;
+            ctx.fillRect(x + 22 + eyeOffset, boss.y + 28, 8, 10);
+            ctx.fillRect(x + 52 + eyeOffset, boss.y + 28, 8, 10);
+
+            // Angry eyebrows
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 12, boss.y + 15, 25, 5);
+            ctx.fillRect(x + 43, boss.y + 15, 25, 5);
+
+            // Mouth
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 25, boss.y + 55, 30, 10);
+
+            // Horns
+            ctx.fillStyle = '#880000';
+            ctx.beginPath();
+            ctx.moveTo(x + 10, boss.y);
+            ctx.lineTo(x, boss.y - 20);
+            ctx.lineTo(x + 20, boss.y);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + boss.width - 10, boss.y);
+            ctx.lineTo(x + boss.width, boss.y - 20);
+            ctx.lineTo(x + boss.width - 20, boss.y);
+            ctx.fill();
+
+            // Health bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(x, boss.y - 30, boss.width, 10);
+            ctx.fillStyle = boss.health > boss.maxHealth * 0.3 ? '#0f0' : '#f00';
+            ctx.fillRect(x, boss.y - 30, boss.width * (boss.health / boss.maxHealth), 10);
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('BOSS', x + boss.width/2, boss.y - 35);
         }
 
         // ============================================
@@ -860,6 +1164,7 @@
                 player.vy = JUMP_FORCE;
                 player.jumpsLeft--;
                 jumpPressed = true;
+                playSound('jump');
                 spawnParticles(player.x + player.width / 2, player.y + player.height, '#fff', 5);
             }
             if (!keys.jump) jumpPressed = false;
@@ -869,6 +1174,7 @@
                 player.isSpinning = true;
                 player.spinFrame = 0;
                 spinPressed = true;
+                playSound('spin');
             }
             if (!keys.spin) spinPressed = false;
 
@@ -885,6 +1191,7 @@
                 player.dashFrame = 0;
                 player.dashCooldown = 30;
                 dashPressed = true;
+                playSound('dash');
                 spawnParticles(player.x + player.width / 2, player.y + player.height / 2, '#00bfff', 8);
             }
             if (!keys.dash) dashPressed = false;
@@ -988,6 +1295,7 @@
                     coins++;
                     totalCoins++;
                     coinsDisplay.textContent = totalCoins;
+                    playSound('coin');
                     spawnParticles(coin.x + 10, coin.y + 10, '#FFD700', 8);
                 }
             });
@@ -1048,6 +1356,7 @@
             totalCoins += 5;
             coinsDisplay.textContent = totalCoins;
             spawnParticles(enemy.x + 15, enemy.y + 15, '#ff6b6b', 12);
+            playSound('stomp');
         }
 
         // ============================================
@@ -1058,6 +1367,7 @@
 
             lives--;
             updateLivesDisplay();
+            playSound('hurt');
             spawnParticles(player.x + player.width / 2, player.y + player.height / 2, '#ff0000', 15);
 
             if (lives <= 0) {
@@ -1085,6 +1395,7 @@
 
         function levelComplete() {
             gameRunning = false;
+            playSound('levelComplete');
             document.getElementById('levelCoins').textContent = coins;
 
             // Show tips for abilities
@@ -1114,6 +1425,7 @@
 
         function gameOver() {
             gameRunning = false;
+            playSound('gameOver');
 
             if (totalCoins > highScore) {
                 highScore = totalCoins;
@@ -1127,10 +1439,15 @@
         }
 
         function startGame() {
+            initAudio();
+
             coins = 0;
             totalCoins = 0;
             lives = 3;
             currentLevel = 1;
+            boss = null;
+            bossActive = false;
+            gamePaused = false;
 
             // All abilities available from start
             abilities.doubleJump = true;
@@ -1151,6 +1468,11 @@
             gameLoop();
         }
 
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
+        }
+
         // ============================================
         // GAME LOOP
         // ============================================
@@ -1167,16 +1489,32 @@
             spikes.forEach(drawSpike);
             coinList.forEach(drawCoin);
             enemies.forEach(drawEnemy);
-            drawFlag();
+            if (!bossActive) drawFlag();
+            if (bossActive) drawBoss();
             drawParticles();
             drawPlayer();
 
-            // Update
-            updatePlayer();
-            updateMovingPlatforms();
-            updateEnemies();
-            updateParticles();
-            checkCollisions();
+            if (!gamePaused) {
+                // Update
+                updatePlayer();
+                updateMovingPlatforms();
+                updateEnemies();
+                updateParticles();
+                checkCollisions();
+                if (bossActive) updateBoss();
+            }
+
+            // Pause overlay
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 40px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+                ctx.font = '16px Courier New';
+                ctx.fillText('Press P to resume', canvas.width/2, canvas.height/2 + 30);
+            }
 
             requestAnimationFrame(gameLoop);
         }
@@ -1193,6 +1531,7 @@
             }
             if (e.code === 'KeyX' || e.code === 'ShiftLeft') keys.spin = true;
             if (e.code === 'KeyZ' || e.code === 'ControlLeft') keys.dash = true;
+            if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
         });
 
         document.addEventListener('keyup', (e) => {
@@ -1225,6 +1564,12 @@
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
         document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        // Sound toggle
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        });
     </script>
 </body>
 </html>

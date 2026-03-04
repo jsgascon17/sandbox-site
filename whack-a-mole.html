@@ -408,8 +408,12 @@
         </div>
     </div>
 
-    <!-- Start Button -->
-    <button class="btn btn-start" id="startBtn">Start Game</button>
+    <!-- Buttons -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button class="btn btn-start" id="startBtn">Start Game</button>
+        <button class="btn btn-start" id="pauseBtn" style="display: none; background: linear-gradient(135deg, #f093fb, #f5576c);">Pause</button>
+        <button class="btn btn-start" id="soundBtn" style="background: linear-gradient(135deg, #4facfe, #00f2fe); padding: 15px 20px;">🔊</button>
+    </div>
 
     <!-- Instructions -->
     <div class="instructions">
@@ -428,11 +432,74 @@
 
     <script>
         // ============================================
+        // AUDIO SYSTEM
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'whack') {
+                // Satisfying pop sound
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(600, now);
+                oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                oscillator.start(now);
+                oscillator.stop(now + 0.1);
+            } else if (type === 'miss') {
+                // Low thud
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(100, now);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                oscillator.start(now);
+                oscillator.stop(now + 0.1);
+            } else if (type === 'pop') {
+                // Mole appears
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(300, now);
+                oscillator.frequency.exponentialRampToValueAtTime(500, now + 0.05);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                oscillator.start(now);
+                oscillator.stop(now + 0.05);
+            } else if (type === 'gameOver') {
+                // Game over sound
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(400, now);
+                oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                oscillator.start(now);
+                oscillator.stop(now + 0.5);
+            }
+        }
+
+        // ============================================
         // GAME VARIABLES
         // ============================================
         let score = 0;
         let timeLeft = 30;
         let gameRunning = false;
+        let gamePaused = false;
         let moleTimer = null;
         let gameTimer = null;
         let moleSpeed = 1000; // How long mole stays up (ms)
@@ -490,7 +557,7 @@
         // SHOW MOLE
         // ============================================
         function showMole() {
-            if (!gameRunning) return;
+            if (!gameRunning || gamePaused) return;
 
             // Hide all moles first
             holes.forEach(hole => hole.classList.remove('active'));
@@ -498,11 +565,12 @@
             // Pick random hole and show mole
             const hole = getRandomHole();
             hole.classList.add('active');
+            playSound('pop');
 
             // Hide mole after moleSpeed time
             setTimeout(() => {
                 hole.classList.remove('active');
-                if (gameRunning) {
+                if (gameRunning && !gamePaused) {
                     showMole(); // Show next mole
                 }
             }, moleSpeed);
@@ -515,11 +583,12 @@
             const hole = e.currentTarget;
 
             // Only count if mole is showing and game is running
-            if (!hole.classList.contains('active') || !gameRunning) return;
+            if (!hole.classList.contains('active') || !gameRunning || gamePaused) return;
 
             // Add points
             score += 10;
             scoreDisplay.textContent = score;
+            playSound('whack');
 
             // Visual feedback
             hole.classList.remove('active');
@@ -541,6 +610,7 @@
         // ============================================
         function startTimer() {
             gameTimer = setInterval(() => {
+                if (gamePaused) return;
                 timeLeft--;
                 timeDisplay.textContent = timeLeft;
 
@@ -551,13 +621,35 @@
         }
 
         // ============================================
+        // PAUSE GAME
+        // ============================================
+        function togglePause() {
+            if (!gameRunning) return;
+
+            gamePaused = !gamePaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            if (gamePaused) {
+                pauseBtn.textContent = 'Resume';
+                // Hide all moles when paused
+                holes.forEach(hole => hole.classList.remove('active'));
+            } else {
+                pauseBtn.textContent = 'Pause';
+                showMole(); // Resume showing moles
+            }
+        }
+
+        // ============================================
         // START GAME
         // ============================================
         function startGame() {
+            initAudio();
+
             // Reset everything
             score = 0;
             timeLeft = 30;
             gameRunning = true;
+            gamePaused = false;
             lastHole = -1;
 
             // Update display
@@ -565,6 +657,8 @@
             timeDisplay.textContent = timeLeft;
             startBtn.disabled = true;
             startBtn.textContent = 'Playing...';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').textContent = 'Pause';
             gameOverScreen.classList.remove('show');
 
             // Start the game
@@ -577,7 +671,9 @@
         // ============================================
         function endGame() {
             gameRunning = false;
+            gamePaused = false;
             clearInterval(gameTimer);
+            playSound('gameOver');
 
             // Hide all moles
             holes.forEach(hole => {
@@ -596,9 +692,10 @@
             highScoreDisplay.textContent = highScore;
             gameOverScreen.classList.add('show');
 
-            // Reset start button
+            // Reset buttons
             startBtn.disabled = false;
             startBtn.textContent = 'Start Game';
+            document.getElementById('pauseBtn').style.display = 'none';
         }
 
         // ============================================
@@ -608,6 +705,20 @@
         playAgainBtn.addEventListener('click', () => {
             gameOverScreen.classList.remove('show');
             startGame();
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', togglePause);
+
+        document.getElementById('soundBtn').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        // Keyboard pause
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                togglePause();
+            }
         });
     </script>
 </body>
