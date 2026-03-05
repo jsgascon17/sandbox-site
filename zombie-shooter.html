@@ -187,7 +187,7 @@
     </div>
     <canvas id="gameCanvas" width="1000" height="600"></canvas>
     <div class="instructions" id="runInstructions">
-        <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>G</span> Grenade | Auto-Running
+        <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>G</span> Grenade | <span>Q</span> Ultimate | <span>V</span> Melee
         <button id="soundBtn" style="background: #333; border: 2px solid #e94560; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
     <div class="instructions hidden" id="lobbyInstructions">
@@ -281,10 +281,30 @@
                     // Ensure new properties exist
                     if (!data.perks) data.perks = [];
                     if (!data.gunUpgrades) data.gunUpgrades = {};
+                    if (!data.weaponSkins) data.weaponSkins = { owned: ['default'], equipped: 'default' };
+                    if (!data.achievements) data.achievements = [];
+                    if (!data.totalKills) data.totalKills = 0;
+                    if (!data.totalHeadshots) data.totalHeadshots = 0;
+                    if (!data.bossKills) data.bossKills = 0;
+                    if (!data.bestCombo) data.bestCombo = 0;
+                    if (!data.nightmareWins) data.nightmareWins = 0;
+                    if (!data.endlessBest) data.endlessBest = 0;
+                    if (!data.hordeBestWave) data.hordeBestWave = 0;
+                    if (!data.prestigeLevel) data.prestigeLevel = 0;
+                    if (!data.selectedUltimate) data.selectedUltimate = 'nuke';
+                    if (!data.lastDailyReset) data.lastDailyReset = 0;
+                    if (!data.dailyChallengesCompleted) data.dailyChallengesCompleted = [];
                     return data;
                 }
             } catch(e) {}
-            return { gold: 50, ownedGuns: ['pistol'], equippedGun: 'pistol', ownedPets: [], activePets: [], bestDistance: 0, perks: [], gunUpgrades: {} };
+            return {
+                gold: 50, ownedGuns: ['pistol'], equippedGun: 'pistol', ownedPets: [], activePets: [],
+                bestDistance: 0, perks: [], gunUpgrades: {},
+                weaponSkins: { owned: ['default'], equipped: 'default' },
+                achievements: [], totalKills: 0, totalHeadshots: 0, bossKills: 0, bestCombo: 0,
+                nightmareWins: 0, endlessBest: 0, hordeBestWave: 0, prestigeLevel: 0,
+                selectedUltimate: 'nuke', lastDailyReset: 0, dailyChallengesCompleted: []
+            };
         }
         function saveSave() { localStorage.setItem('lastRunSave', JSON.stringify(saveData)); }
         let saveData = loadSave();
@@ -369,6 +389,121 @@
         const GUN_UPGRADE_COSTS = { damage: 100, fireRate: 80, magSize: 60 };
         const GUN_UPGRADE_MAX = 5;
 
+        // GAME MODES
+        let gameType = 'classic'; // classic, endless, bossrush, horde
+        let difficulty = 'normal'; // easy, normal, hard, nightmare
+        const DIFFICULTY_MODS = {
+            easy: { damage: 0.5, health: 0.7, speed: 0.8, gold: 0.8 },
+            normal: { damage: 1, health: 1, speed: 1, gold: 1 },
+            hard: { damage: 1.5, health: 1.5, speed: 1.2, gold: 1.3 },
+            nightmare: { damage: 2, health: 2, speed: 1.4, gold: 1.5 }
+        };
+
+        // HORDE MODE
+        let hordeWave = 0, hordeKillsNeeded = 0, hordeKillsThisWave = 0;
+        let hordeSpawnRate = 1;
+
+        // ULTIMATE ABILITIES
+        let ultimateCharge = 0;
+        const ULTIMATE_MAX = 100;
+        let ultimateActive = false, ultimateTimer = 0;
+        const ULTIMATES = {
+            nuke: { name: 'Nuclear Strike', desc: 'Kill all zombies on screen', chargeRate: 0.5, icon: '☢️' },
+            rage: { name: 'Rage Mode', desc: '3x damage, infinite ammo for 5s', chargeRate: 0.4, duration: 300, icon: '😤' },
+            freeze: { name: 'Time Freeze', desc: 'Freeze all zombies for 4s', chargeRate: 0.6, duration: 240, icon: '❄️' },
+            shield: { name: 'God Mode', desc: 'Invincible for 5s', chargeRate: 0.45, duration: 300, icon: '🌟' }
+        };
+        let selectedUltimate = 'nuke';
+
+        // WEAPON SKINS
+        const WEAPON_SKINS = {
+            default: { name: 'Default', price: 0, colors: null },
+            gold: { name: 'Gold', price: 200, colors: { primary: '#ffd700', secondary: '#cc9900', accent: '#ffee88' } },
+            neon: { name: 'Neon', price: 300, colors: { primary: '#00ffff', secondary: '#ff00ff', accent: '#00ff00' } },
+            camo: { name: 'Camo', price: 150, colors: { primary: '#4a5d23', secondary: '#2d3a0f', accent: '#6b7d34' } },
+            lava: { name: 'Lava', price: 350, colors: { primary: '#ff4500', secondary: '#8b0000', accent: '#ffd700' } },
+            ice: { name: 'Ice', price: 250, colors: { primary: '#87ceeb', secondary: '#4169e1', accent: '#e0ffff' } },
+            void: { name: 'Void', price: 400, colors: { primary: '#1a0033', secondary: '#330066', accent: '#9933ff' } },
+            blood: { name: 'Bloodied', price: 300, colors: { primary: '#8b0000', secondary: '#4a0000', accent: '#ff0000' } }
+        };
+
+        // MELEE WEAPON
+        let meleeCD = 0;
+        const MELEE_DAMAGE = 50;
+        const MELEE_RANGE = 60;
+        let meleeSwing = 0;
+
+        // ACHIEVEMENTS
+        const ACHIEVEMENTS = {
+            firstBlood: { name: 'First Blood', desc: 'Kill your first zombie', icon: '🩸', check: () => saveData.totalKills >= 1 },
+            centurion: { name: 'Centurion', desc: 'Kill 100 zombies', icon: '💯', check: () => saveData.totalKills >= 100 },
+            headhunter: { name: 'Headhunter', desc: 'Get 50 headshots', icon: '🎯', check: () => saveData.totalHeadshots >= 50 },
+            survivor: { name: 'Survivor', desc: 'Reach 5000m', icon: '🏃', check: () => saveData.bestDistance >= 5000 },
+            bossSlayer: { name: 'Boss Slayer', desc: 'Kill 10 bosses', icon: '👹', check: () => saveData.bossKills >= 10 },
+            comboMaster: { name: 'Combo Master', desc: 'Get a 25+ combo', icon: '🔥', check: () => saveData.bestCombo >= 25 },
+            rich: { name: 'Rich', desc: 'Have 5000 gold', icon: '💰', check: () => saveData.gold >= 5000 },
+            collector: { name: 'Collector', desc: 'Own all guns', icon: '🔫', check: () => saveData.ownedGuns.length >= Object.keys(GUNS).length },
+            petLover: { name: 'Pet Lover', desc: 'Own 5 pets', icon: '🐾', check: () => saveData.ownedPets.length >= 5 },
+            nightmare: { name: 'Nightmare', desc: 'Win on Nightmare difficulty', icon: '💀', check: () => saveData.nightmareWins >= 1 },
+            endless50: { name: 'Endless Runner', desc: 'Reach 50000m in Endless', icon: '∞', check: () => saveData.endlessBest >= 50000 },
+            hordeWave20: { name: 'Horde Defender', desc: 'Survive wave 20 in Horde', icon: '🛡️', check: () => saveData.hordeBestWave >= 20 }
+        };
+
+        // DAILY CHALLENGES
+        let dailyChallenges = [];
+        const CHALLENGE_TYPES = [
+            { id: 'kills', name: 'Kill {n} zombies', targets: [50, 100, 200] },
+            { id: 'headshots', name: 'Get {n} headshots', targets: [10, 25, 50] },
+            { id: 'distance', name: 'Travel {n}m', targets: [2000, 3500, 5000] },
+            { id: 'combo', name: 'Get a {n}+ combo', targets: [10, 15, 25] },
+            { id: 'bossKills', name: 'Kill {n} bosses', targets: [2, 3, 5] },
+            { id: 'noHit', name: 'Travel {n}m without taking damage', targets: [500, 1000, 1500] },
+            { id: 'pistolOnly', name: 'Kill {n} zombies with pistol', targets: [30, 50, 75] },
+            { id: 'grenadeKills', name: 'Kill {n} zombies with grenades', targets: [10, 20, 30] }
+        ];
+        let dailyProgress = {};
+
+        // PRESTIGE
+        let prestigeLevel = 0;
+        const PRESTIGE_BONUSES = {
+            damage: 0.05,    // +5% per prestige
+            gold: 0.1,       // +10% per prestige
+            health: 0.05,    // +5% per prestige
+            ultimate: 0.1    // +10% charge rate per prestige
+        };
+
+        // MORE PETS
+        const PETS = {
+            dog: { name: 'Guard Dog', damage: 15, attackRate: 1200, range: 100, price: 100, icon: '🐕', color: '#8B4513' },
+            wolf: { name: 'Dire Wolf', damage: 25, attackRate: 1000, range: 120, price: 250, icon: '🐺', color: '#696969' },
+            lion: { name: 'War Lion', damage: 40, attackRate: 1500, range: 100, price: 400, icon: '🦁', color: '#DAA520' },
+            bear: { name: 'Battle Bear', damage: 60, attackRate: 2000, range: 80, price: 600, icon: '🐻', color: '#8B4513' },
+            dragon: { name: 'Fire Drake', damage: 80, attackRate: 2500, range: 150, price: 1000, icon: '🐉', color: '#FF4500' },
+            phoenix: { name: 'Phoenix', damage: 50, attackRate: 1800, range: 140, price: 800, icon: '🔥', color: '#FF6347', heals: true },
+            ghost: { name: 'Phantom', damage: 35, attackRate: 800, range: 180, price: 700, icon: '👻', color: '#9370DB', pierces: true },
+            robot: { name: 'Combat Drone', damage: 30, attackRate: 500, range: 160, price: 550, icon: '🤖', color: '#708090' },
+            tiger: { name: 'Shadow Tiger', damage: 55, attackRate: 1100, range: 90, price: 500, icon: '🐅', color: '#FF8C00' },
+            eagle: { name: 'War Eagle', damage: 45, attackRate: 900, range: 200, price: 650, icon: '🦅', color: '#B8860B', flying: true },
+            snake: { name: 'Venom Snake', damage: 20, attackRate: 600, range: 100, price: 350, icon: '🐍', color: '#228B22', poison: true },
+            unicorn: { name: 'Battle Unicorn', damage: 70, attackRate: 1600, range: 130, price: 900, icon: '🦄', color: '#FF69B4', magic: true }
+        };
+
+        // ENVIRONMENTAL HAZARDS
+        let hazards = [];
+        const HAZARD_TYPES = {
+            barrel: { name: 'Explosive Barrel', damage: 100, radius: 80, color: '#ff4500' },
+            electric: { name: 'Electric Fence', damage: 30, radius: 40, color: '#00ffff' },
+            fire: { name: 'Fire Pit', damage: 15, radius: 50, color: '#ff6600' },
+            acid: { name: 'Acid Pool', damage: 20, radius: 60, color: '#00ff00' }
+        };
+
+        // MINI BOSSES (appear at 500m intervals)
+        const MINI_BOSSES = {
+            brute: { name: 'Brute', health: 400, damage: 30, speed: 0.5, gold: 75, color: '#4a4a4a' },
+            spitter_king: { name: 'Spitter King', health: 250, damage: 20, speed: 0.6, gold: 60, color: '#9932CC', spits: true },
+            charger: { name: 'Charger', health: 300, damage: 40, speed: 1.5, gold: 70, color: '#8B0000', charges: true }
+        };
+
         const distanceEl = document.getElementById('distance');
         const goldEl = document.getElementById('gold');
         const healthEl = document.getElementById('health');
@@ -376,11 +511,18 @@
         const ammoEl = document.getElementById('ammo');
 
         const SHOPS = [
-            { id: 'gun', name: 'ARMORY', x: 120, y: 150, w: 160, h: 100, color: '#e94560', icon: '🔫' },
-            { id: 'upgrade', name: 'UPGRADES', x: 320, y: 150, w: 160, h: 100, color: '#00bfff', icon: '⚡' },
-            { id: 'pet', name: 'PETS', x: W - 480, y: 150, w: 160, h: 100, color: '#4CAF50', icon: '🐾' },
-            { id: 'perk', name: 'PERKS', x: W - 280, y: 150, w: 160, h: 100, color: '#9932CC', icon: '✨' },
-            { id: 'start', name: 'START RUN', x: W/2 - 100, y: H - 150, w: 200, h: 90, color: '#ffd700', icon: '🏃' }
+            { id: 'gun', name: 'ARMORY', x: 60, y: 120, w: 140, h: 85, color: '#e94560', icon: '🔫' },
+            { id: 'upgrade', name: 'UPGRADES', x: 220, y: 120, w: 140, h: 85, color: '#00bfff', icon: '⚡' },
+            { id: 'skins', name: 'SKINS', x: 380, y: 120, w: 140, h: 85, color: '#ff69b4', icon: '🎨' },
+            { id: 'pet', name: 'PETS', x: W - 520, y: 120, w: 140, h: 85, color: '#4CAF50', icon: '🐾' },
+            { id: 'perk', name: 'PERKS', x: W - 360, y: 120, w: 140, h: 85, color: '#9932CC', icon: '✨' },
+            { id: 'ultimate', name: 'ULTIMATE', x: W - 200, y: 120, w: 140, h: 85, color: '#ffd700', icon: '💥' },
+            { id: 'achievements', name: 'ACHIEVEMENTS', x: 60, y: 220, w: 180, h: 70, color: '#ff9800', icon: '🏆' },
+            { id: 'challenges', name: 'DAILY', x: W - 240, y: 220, w: 180, h: 70, color: '#00ff7f', icon: '📋' },
+            { id: 'prestige', name: 'PRESTIGE', x: W/2 - 90, y: 220, w: 180, h: 70, color: '#ff0000', icon: '⭐' },
+            { id: 'mode', name: 'GAME MODE', x: W/2 - 140, y: H - 200, w: 280, h: 70, color: '#00bfff', icon: '🎮' },
+            { id: 'difficulty', name: 'DIFFICULTY', x: W/2 - 140, y: H - 120, w: 140, h: 50, color: '#ff6600', icon: '💀' },
+            { id: 'start', name: 'START', x: W/2 + 10, y: H - 120, w: 130, h: 50, color: '#4CAF50', icon: '▶️' }
         ];
         let activeShop = null;
 
@@ -589,8 +731,9 @@
             const screenY = horizon + (H - horizon) * (1 - z.depth / 200) * 1.5;
             let size = 80 * scale;
 
-            // Boss is bigger
+            // Boss/miniboss is bigger
             if (z.type === 'boss') size *= 2;
+            else if (z.type === 'miniboss') size *= 1.5;
             else if (z.type === 'crawler') size *= 0.6;
 
             if (size < 8 || screenY < horizon - 60 || screenX < -150 || screenX > W + 150) return;
@@ -616,6 +759,9 @@
             else if (z.type === 'tank') { headColor = '#4a6634'; }
             else if (z.type === 'armored') { headColor = '#708090'; bodyColor = '#4a5568'; }
             else if (z.type === 'shadow') { headColor = '#1a1a2e'; bodyColor = '#0a0a1a'; ctx.globalAlpha = 0.6 + Math.sin(frame * 0.2 + z.id) * 0.2; }
+            else if (z.type === 'healer') { headColor = '#00ff88'; bodyColor = '#006644'; }
+            else if (z.type === 'shielder') { headColor = '#4488ff'; bodyColor = '#224488'; }
+            else if (z.type === 'miniboss') { headColor = z.color || '#ff4400'; bodyColor = '#2a2a2a'; }
 
             // Crawler is low
             if (z.type === 'crawler') {
@@ -664,6 +810,58 @@
                     ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.5, 0, Math.PI * 2); ctx.fill();
                 }
 
+                // Healer has healing aura and cross symbol
+                if (z.type === 'healer') {
+                    // Healing aura
+                    ctx.fillStyle = `rgba(0,255,136,${0.2 + Math.sin(frame * 0.1) * 0.1})`;
+                    ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.7, 0, Math.PI * 2); ctx.fill();
+                    // Cross on body
+                    ctx.fillStyle = '#00ff88';
+                    ctx.fillRect(-size * 0.03, -size * 0.55, size * 0.06, size * 0.2);
+                    ctx.fillRect(-size * 0.1, -size * 0.48, size * 0.2, size * 0.06);
+                    // Healing particles
+                    if (frame % 20 < 10) {
+                        ctx.fillStyle = '#00ff88';
+                        for (let i = 0; i < 3; i++) {
+                            const px = (Math.sin(frame * 0.1 + i * 2) * size * 0.5);
+                            const py = -size * 0.4 - (frame % 20) * 2;
+                            ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+                        }
+                    }
+                }
+
+                // Shielder has energy shield
+                if (z.type === 'shielder' && z.shield > 0) {
+                    ctx.strokeStyle = `rgba(68,136,255,${0.6 + Math.sin(frame * 0.15) * 0.2})`;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 15;
+                    ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.6, 0, Math.PI * 2); ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    // Shield bar
+                    ctx.fillStyle = '#224488';
+                    ctx.fillRect(-size * 0.2, -size - 5, size * 0.4, 4);
+                    ctx.fillStyle = '#4488ff';
+                    ctx.fillRect(-size * 0.2, -size - 5, size * 0.4 * (z.shield / z.maxShield), 4);
+                }
+
+                // Mini boss is larger with special effects
+                if (z.type === 'miniboss') {
+                    ctx.fillStyle = `rgba(255,68,0,${0.3 + Math.sin(frame * 0.1) * 0.15})`;
+                    ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.6, 0, Math.PI * 2); ctx.fill();
+                    // Crown/horns
+                    ctx.fillStyle = z.color || '#ff4400';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.15, -size * 0.9);
+                    ctx.lineTo(-size * 0.2, -size * 1.1);
+                    ctx.lineTo(-size * 0.1, -size * 0.95);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(size * 0.15, -size * 0.9);
+                    ctx.lineTo(size * 0.2, -size * 1.1);
+                    ctx.lineTo(size * 0.1, -size * 0.95);
+                    ctx.fill();
+                }
+
                 // Burning effect
                 if (z.burning && z.burning > 0) {
                     ctx.fillStyle = `rgba(255,100,0,${0.4 + Math.sin(frame * 0.3) * 0.2})`;
@@ -688,16 +886,20 @@
             ctx.restore();
             ctx.globalAlpha = 1;
 
-            // Health bar for boss/tank
-            if ((z.type === 'boss' || z.type === 'tank') && size > 30) {
-                const bw = z.type === 'boss' ? size * 0.8 : size * 0.5;
+            // Health bar for boss/tank/miniboss
+            if ((z.type === 'boss' || z.type === 'tank' || z.type === 'miniboss') && size > 30) {
+                const bw = z.type === 'boss' ? size * 0.8 : z.type === 'miniboss' ? size * 0.6 : size * 0.5;
                 ctx.fillStyle = '#333';
                 ctx.fillRect(screenX - bw/2, screenY - size - 15, bw, 8);
-                ctx.fillStyle = z.type === 'boss' ? '#e94560' : '#ff9800';
+                ctx.fillStyle = z.type === 'boss' ? '#e94560' : z.type === 'miniboss' ? '#ff4400' : '#ff9800';
                 ctx.fillRect(screenX - bw/2, screenY - size - 15, bw * (z.health / z.maxHealth), 8);
                 if (z.type === 'boss') {
                     ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Courier New'; ctx.textAlign = 'center';
                     ctx.fillText('BOSS', screenX, screenY - size - 22);
+                } else if (z.type === 'miniboss') {
+                    const mbName = MINI_BOSSES[z.minibossType]?.name || 'ELITE';
+                    ctx.fillStyle = '#ff4400'; ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center';
+                    ctx.fillText(mbName.toUpperCase(), screenX, screenY - size - 22);
                 }
             }
         }
@@ -1094,6 +1296,75 @@
             ctx.fillText(`💰 ${runGold}`, 18, H - 95);
             ctx.shadowBlur = 0;
 
+            // Ultimate charge bar
+            const ultBarW = 150, ultBarH = 20;
+            const ultX = W - ultBarW - 20, ultY = 60;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(ultX - 2, ultY - 2, ultBarW + 4, ultBarH + 4);
+            const ultReady = ultimateCharge >= ULTIMATE_MAX;
+            const ultGrad = ctx.createLinearGradient(ultX, ultY, ultX + ultBarW, ultY);
+            if (ultReady) {
+                ultGrad.addColorStop(0, '#ffd700');
+                ultGrad.addColorStop(0.5, '#ffee00');
+                ultGrad.addColorStop(1, '#ffd700');
+            } else {
+                ultGrad.addColorStop(0, '#ff6600');
+                ultGrad.addColorStop(1, '#ff4400');
+            }
+            ctx.fillStyle = ultGrad;
+            ctx.fillRect(ultX, ultY, ultBarW * (ultimateCharge / ULTIMATE_MAX), ultBarH);
+            ctx.strokeStyle = ultReady ? '#ffd700' : '#555';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(ultX, ultY, ultBarW, ultBarH);
+            if (ultReady) {
+                ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 10;
+                ctx.strokeRect(ultX, ultY, ultBarW, ultBarH);
+                ctx.shadowBlur = 0;
+            }
+            const ult = ULTIMATES[selectedUltimate];
+            ctx.fillStyle = ultReady ? '#ffd700' : '#aaa'; ctx.font = 'bold 12px Rajdhani'; ctx.textAlign = 'right';
+            ctx.fillText(`${ult.icon} ${ult.name} [Q]`, W - 20, ultY - 5);
+            if (ultimateActive && ultimateTimer > 0) {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Rajdhani';
+                ctx.fillText(`ACTIVE: ${(ultimateTimer / 60).toFixed(1)}s`, W - 20, ultY + ultBarH + 15);
+            }
+
+            // Melee indicator
+            ctx.textAlign = 'left';
+            const meleeReady = meleeCD <= 0;
+            ctx.fillStyle = meleeReady ? '#4CAF50' : '#555';
+            ctx.font = 'bold 18px Rajdhani';
+            ctx.fillText(`⚔️ Melee`, 100, H - 60);
+            ctx.fillStyle = '#666'; ctx.font = '11px Rajdhani';
+            ctx.fillText('[V]', 100, H - 75);
+            if (!meleeReady) {
+                ctx.fillStyle = '#555';
+                ctx.fillRect(100, H - 55, 60, 4);
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(100, H - 55, 60 * (1 - meleeCD / 30), 4);
+            }
+
+            // Game mode / wave info
+            if (gameType === 'horde' && hordeWave > 0) {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
+                ctx.fillText(`WAVE ${hordeWave}`, W/2, 110);
+                ctx.fillStyle = '#aaa'; ctx.font = '14px Rajdhani';
+                ctx.fillText(`${hordeKillsThisWave}/${hordeKillsNeeded} kills`, W/2, 128);
+            } else if (gameType === 'endless') {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Orbitron'; ctx.textAlign = 'right';
+                ctx.fillText(`ENDLESS`, W - 20, 100);
+            } else if (gameType === 'bossrush') {
+                ctx.fillStyle = '#e94560'; ctx.font = 'bold 16px Orbitron'; ctx.textAlign = 'right';
+                ctx.fillText(`BOSS RUSH`, W - 20, 100);
+            }
+
+            // Difficulty indicator
+            if (difficulty !== 'normal') {
+                const diffColors = { easy: '#4CAF50', hard: '#ff9800', nightmare: '#ff0000' };
+                ctx.fillStyle = diffColors[difficulty]; ctx.font = 'bold 12px Rajdhani'; ctx.textAlign = 'left';
+                ctx.fillText(difficulty.toUpperCase(), 20, 100);
+            }
+
             // Active powerups (improved)
             let powerupX = W/2 - 120;
             Object.entries(activePowerups).forEach(([type, endTime]) => {
@@ -1313,6 +1584,211 @@
 
                 ctx.fillStyle = '#888'; ctx.font = '12px Rajdhani'; ctx.textAlign = 'center';
                 ctx.fillText('Upgrades apply to currently equipped gun', W/2, itemY + 15);
+            } else if (activeShop === 'skins') {
+                Object.entries(WEAPON_SKINS).forEach(([id, skin], index) => {
+                    const owned = saveData.weaponSkins.owned.includes(id);
+                    const equipped = saveData.weaponSkins.equipped === id;
+                    ctx.fillStyle = equipped ? 'rgba(76,175,80,0.3)' : owned ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 40);
+                    ctx.strokeStyle = equipped ? '#4CAF50' : owned ? '#555' : '#333';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 40);
+
+                    // Skin preview
+                    if (skin.colors) {
+                        ctx.fillStyle = skin.colors.primary;
+                        ctx.fillRect(px + 35, itemY + 10, 30, 20);
+                        ctx.fillStyle = skin.colors.secondary;
+                        ctx.fillRect(px + 65, itemY + 10, 20, 20);
+                        ctx.fillStyle = skin.colors.accent;
+                        ctx.fillRect(px + 85, itemY + 10, 10, 20);
+                    } else {
+                        ctx.fillStyle = '#666';
+                        ctx.fillRect(px + 35, itemY + 10, 60, 20);
+                    }
+
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Rajdhani'; ctx.textAlign = 'left';
+                    ctx.fillText(`${index + 1}. ${skin.name}`, px + 110, itemY + 27);
+                    ctx.textAlign = 'right';
+                    if (equipped) { ctx.fillStyle = '#4CAF50'; ctx.fillText('✓ EQUIPPED', px + pw - 35, itemY + 27); }
+                    else if (owned) { ctx.fillStyle = '#2196F3'; ctx.fillText(`EQUIP [${index + 1}]`, px + pw - 35, itemY + 27); }
+                    else { ctx.fillStyle = saveData.gold >= skin.price ? '#ffd700' : '#666'; ctx.fillText(`${skin.price}g`, px + pw - 35, itemY + 27); }
+                    itemY += 42;
+                });
+            } else if (activeShop === 'ultimate') {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText('Select your Ultimate Ability', W/2, itemY);
+                itemY += 25;
+                Object.entries(ULTIMATES).forEach(([id, ult], index) => {
+                    const selected = saveData.selectedUltimate === id;
+                    ctx.fillStyle = selected ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 55);
+                    ctx.strokeStyle = selected ? '#ffd700' : '#555';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 55);
+
+                    ctx.font = '28px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText(ult.icon, px + 35, itemY + 38);
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani';
+                    ctx.fillText(`${index + 1}. ${ult.name}`, px + 75, itemY + 25);
+                    ctx.fillStyle = '#aaa'; ctx.font = '13px Rajdhani';
+                    ctx.fillText(ult.desc, px + 75, itemY + 45);
+                    ctx.textAlign = 'right';
+                    if (selected) { ctx.fillStyle = '#ffd700'; ctx.font = 'bold 14px Rajdhani'; ctx.fillText('✓ SELECTED', px + pw - 35, itemY + 35); }
+                    else { ctx.fillStyle = '#2196F3'; ctx.fillText(`SELECT [${index + 1}]`, px + pw - 35, itemY + 35); }
+                    itemY += 60;
+                });
+            } else if (activeShop === 'achievements') {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText(`Achievements: ${saveData.achievements.length}/${Object.keys(ACHIEVEMENTS).length}`, W/2, itemY);
+                itemY += 20;
+                Object.entries(ACHIEVEMENTS).forEach(([id, ach], index) => {
+                    const unlocked = saveData.achievements.includes(id);
+                    ctx.fillStyle = unlocked ? 'rgba(76,175,80,0.3)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 38);
+                    ctx.strokeStyle = unlocked ? '#4CAF50' : '#333';
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 38);
+
+                    ctx.font = '20px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText(ach.icon, px + 30, itemY + 27);
+                    ctx.fillStyle = unlocked ? '#fff' : '#666'; ctx.font = 'bold 14px Rajdhani';
+                    ctx.fillText(ach.name, px + 60, itemY + 18);
+                    ctx.fillStyle = unlocked ? '#aaa' : '#555'; ctx.font = '12px Rajdhani';
+                    ctx.fillText(ach.desc, px + 60, itemY + 33);
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = unlocked ? '#4CAF50' : '#666';
+                    ctx.fillText(unlocked ? '✓ UNLOCKED' : 'LOCKED', px + pw - 35, itemY + 25);
+                    itemY += 40;
+                });
+            } else if (activeShop === 'challenges') {
+                generateDailyChallenges();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 18px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText('📋 DAILY CHALLENGES', W/2, itemY + 5);
+                ctx.fillStyle = '#888'; ctx.font = '12px Rajdhani';
+                ctx.fillText('Resets at midnight', W/2, itemY + 22);
+                itemY += 45;
+                dailyChallenges.forEach((ch, index) => {
+                    const completed = saveData.dailyChallengesCompleted.includes(ch.id);
+                    const progress = dailyProgress[ch.type] || 0;
+                    ctx.fillStyle = completed ? 'rgba(76,175,80,0.3)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 60);
+                    ctx.strokeStyle = completed ? '#4CAF50' : '#00ff7f';
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 60);
+
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Rajdhani'; ctx.textAlign = 'left';
+                    ctx.fillText(`${index + 1}. ${ch.name}`, px + 35, itemY + 22);
+                    ctx.fillStyle = '#ffd700'; ctx.font = '13px Rajdhani';
+                    ctx.fillText(`Reward: ${ch.reward} gold`, px + 35, itemY + 40);
+
+                    // Progress bar
+                    if (!completed) {
+                        ctx.fillStyle = '#333';
+                        ctx.fillRect(px + 35, itemY + 48, pw - 120, 8);
+                        ctx.fillStyle = '#00ff7f';
+                        ctx.fillRect(px + 35, itemY + 48, (pw - 120) * Math.min(1, progress / ch.target), 8);
+                    }
+
+                    ctx.textAlign = 'right';
+                    if (completed) { ctx.fillStyle = '#4CAF50'; ctx.font = 'bold 14px Rajdhani'; ctx.fillText('✓ COMPLETED', px + pw - 35, itemY + 35); }
+                    else { ctx.fillStyle = '#aaa'; ctx.fillText(`${progress}/${ch.target}`, px + pw - 35, itemY + 35); }
+                    itemY += 65;
+                });
+            } else if (activeShop === 'prestige') {
+                ctx.fillStyle = '#ff0000'; ctx.font = 'bold 24px Orbitron'; ctx.textAlign = 'center';
+                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 15;
+                ctx.fillText(`⭐ PRESTIGE ${saveData.prestigeLevel}`, W/2, itemY + 10);
+                ctx.shadowBlur = 0;
+                itemY += 40;
+
+                ctx.fillStyle = '#fff'; ctx.font = '14px Rajdhani';
+                ctx.fillText('Prestige resets your guns, pets, and perks', W/2, itemY);
+                ctx.fillText('but gives permanent bonuses!', W/2, itemY + 18);
+                itemY += 50;
+
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#aaa'; ctx.font = '13px Rajdhani';
+                ctx.fillText(`Current Bonuses (Prestige ${saveData.prestigeLevel}):`, px + 40, itemY);
+                itemY += 20;
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillText(`• +${saveData.prestigeLevel * 5}% Damage`, px + 50, itemY);
+                ctx.fillText(`• +${saveData.prestigeLevel * 10}% Gold`, px + 50, itemY + 18);
+                ctx.fillText(`• +${saveData.prestigeLevel * 5}% Max Health`, px + 50, itemY + 36);
+                ctx.fillText(`• +${saveData.prestigeLevel * 10}% Ultimate Charge Rate`, px + 50, itemY + 54);
+                itemY += 80;
+
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#ffd700'; ctx.font = 'bold 15px Rajdhani';
+                ctx.fillText(`Next Prestige Bonuses:`, W/2, itemY);
+                ctx.fillStyle = '#fff';
+                ctx.fillText(`+5% Damage, +10% Gold, +5% HP, +10% Ult Charge`, W/2, itemY + 20);
+                itemY += 50;
+
+                const canPrestige = saveData.gold >= 1000 * (saveData.prestigeLevel + 1);
+                ctx.fillStyle = canPrestige ? 'rgba(255,0,0,0.3)' : 'rgba(50,50,50,0.5)';
+                ctx.fillRect(px + 100, itemY, pw - 200, 50);
+                ctx.strokeStyle = canPrestige ? '#ff0000' : '#333';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(px + 100, itemY, pw - 200, 50);
+                ctx.fillStyle = canPrestige ? '#fff' : '#666'; ctx.font = 'bold 18px Orbitron';
+                ctx.fillText('PRESTIGE [1]', W/2, itemY + 28);
+                ctx.fillStyle = canPrestige ? '#ffd700' : '#555'; ctx.font = '14px Rajdhani';
+                ctx.fillText(`Cost: ${1000 * (saveData.prestigeLevel + 1)} gold`, W/2, itemY + 45);
+            } else if (activeShop === 'mode') {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
+                ctx.fillText('🎮 GAME MODE', W/2, itemY + 5);
+                itemY += 35;
+                const modes = [
+                    { id: 'classic', name: 'Classic', desc: 'Reach 5000m to escape. Bosses every 1000m.', icon: '🏃' },
+                    { id: 'endless', name: 'Endless', desc: 'No escape. How far can you go?', icon: '∞' },
+                    { id: 'bossrush', name: 'Boss Rush', desc: 'Fight boss after boss! Survive 10 bosses.', icon: '👹' },
+                    { id: 'horde', name: 'Horde', desc: 'Wave-based survival. Survive 20 waves!', icon: '🧟' }
+                ];
+                modes.forEach((mode, index) => {
+                    const selected = gameType === mode.id;
+                    ctx.fillStyle = selected ? 'rgba(0,191,255,0.3)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 55);
+                    ctx.strokeStyle = selected ? '#00bfff' : '#555';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 55);
+
+                    ctx.font = '28px Arial'; ctx.textAlign = 'left';
+                    ctx.fillText(mode.icon, px + 35, itemY + 38);
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani';
+                    ctx.fillText(`${index + 1}. ${mode.name}`, px + 75, itemY + 25);
+                    ctx.fillStyle = '#aaa'; ctx.font = '12px Rajdhani';
+                    ctx.fillText(mode.desc, px + 75, itemY + 45);
+                    ctx.textAlign = 'right';
+                    if (selected) { ctx.fillStyle = '#00bfff'; ctx.font = 'bold 14px Rajdhani'; ctx.fillText('✓ SELECTED', px + pw - 35, itemY + 35); }
+                    else { ctx.fillStyle = '#fff'; ctx.fillText(`SELECT [${index + 1}]`, px + pw - 35, itemY + 35); }
+                    itemY += 60;
+                });
+            } else if (activeShop === 'difficulty') {
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Orbitron'; ctx.textAlign = 'center';
+                ctx.fillText('💀 DIFFICULTY', W/2, itemY + 5);
+                itemY += 35;
+                const diffs = [
+                    { id: 'easy', name: 'Easy', desc: 'Less damage, slower zombies, less gold', color: '#4CAF50' },
+                    { id: 'normal', name: 'Normal', desc: 'Standard experience', color: '#fff' },
+                    { id: 'hard', name: 'Hard', desc: 'More damage, faster zombies, more gold', color: '#ff9800' },
+                    { id: 'nightmare', name: 'Nightmare', desc: 'Maximum challenge, maximum rewards', color: '#ff0000' }
+                ];
+                diffs.forEach((diff, index) => {
+                    const selected = difficulty === diff.id;
+                    ctx.fillStyle = selected ? `${diff.color}33` : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 50);
+                    ctx.strokeStyle = selected ? diff.color : '#555';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 50);
+
+                    ctx.fillStyle = diff.color; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'left';
+                    ctx.fillText(`${index + 1}. ${diff.name}`, px + 35, itemY + 23);
+                    ctx.fillStyle = '#aaa'; ctx.font = '12px Rajdhani';
+                    ctx.fillText(diff.desc, px + 35, itemY + 42);
+                    ctx.textAlign = 'right';
+                    if (selected) { ctx.fillStyle = diff.color; ctx.font = 'bold 14px Rajdhani'; ctx.fillText('✓ SELECTED', px + pw - 35, itemY + 32); }
+                    else { ctx.fillStyle = '#fff'; ctx.fillText(`SELECT [${index + 1}]`, px + pw - 35, itemY + 32); }
+                    itemY += 55;
+                });
             }
 
             ctx.fillStyle = '#666'; ctx.font = '14px Rajdhani'; ctx.textAlign = 'center';
@@ -1398,6 +1874,14 @@
                         if (isHeadshot) { damage *= 2; headshots++; playSound('headshot'); }
                         if (isCrit) { damage *= 3; critFlash = 1; playSound('headshot'); }
 
+                        // Rage mode ultimate - 3x damage
+                        if (ultimateActive && selectedUltimate === 'rage') {
+                            damage *= 3;
+                        }
+
+                        // Prestige damage bonus
+                        damage *= (1 + saveData.prestigeLevel * PRESTIGE_BONUSES.damage);
+
                         // Armored zombies take 50% less damage (unless headshot)
                         if (z.type === 'armored' && !isHeadshot) {
                             damage *= 0.5;
@@ -1408,7 +1892,17 @@
                             z.burning = 180; // 3 seconds of burn
                         }
 
+                        // Shielder zombies - damage shield first
+                        if (z.shield && z.shield > 0) {
+                            const shieldDmg = Math.min(z.shield, damage);
+                            z.shield -= shieldDmg;
+                            damage -= shieldDmg;
+                            z.shieldRegenCD = 120; // Delay shield regen
+                            hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.7, alpha: 1, shieldHit: true });
+                        }
+
                         z.health -= damage;
+                        ultimateCharge = Math.min(ULTIMATE_MAX, ultimateCharge + 0.5); // Charge ultimate on hit
                         playSound('zombieHit');
                         hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.5, alpha: 1, headshot: isHeadshot, crit: isCrit });
 
@@ -1588,53 +2082,291 @@
         }
 
         // ============================================
+        // ULTIMATE ABILITIES
+        // ============================================
+        function activateUltimate() {
+            if (ultimateCharge < ULTIMATE_MAX || ultimateActive) return;
+            ultimateCharge = 0;
+            ultimateActive = true;
+            const ult = ULTIMATES[selectedUltimate];
+            playSound('powerup');
+            screenShake = 15;
+
+            if (selectedUltimate === 'nuke') {
+                // Kill all zombies on screen
+                zombies.forEach(z => {
+                    if (z.type !== 'boss') {
+                        z.health = 0;
+                        kills++;
+                        deadZombies.push({
+                            x: z.screenX || W/2, y: z.screenY || H/2, size: z.screenSize || 50,
+                            type: z.type, rotation: 0, vy: -8, vr: (Math.random() - 0.5) * 0.5, alpha: 1
+                        });
+                    } else {
+                        z.health -= z.maxHealth * 0.3; // Bosses take 30% damage
+                    }
+                });
+                // Big explosion effect
+                for (let i = 0; i < 50; i++) {
+                    particles.push({
+                        x: W/2 + (Math.random() - 0.5) * W,
+                        y: H/2 + (Math.random() - 0.5) * H,
+                        vx: (Math.random() - 0.5) * 20,
+                        vy: (Math.random() - 0.5) * 20,
+                        size: 10 + Math.random() * 20,
+                        color: Math.random() > 0.5 ? '#ff4500' : '#ffd700',
+                        life: 1.5
+                    });
+                }
+                ultimateActive = false;
+            } else {
+                ultimateTimer = ult.duration;
+            }
+        }
+
+        function updateUltimate() {
+            if (ultimateActive && ultimateTimer > 0) {
+                ultimateTimer--;
+                if (ultimateTimer <= 0) {
+                    ultimateActive = false;
+                }
+            }
+        }
+
+        // ============================================
+        // MELEE ATTACK
+        // ============================================
+        function meleeAttack() {
+            if (meleeCD > 0) return;
+            meleeCD = 30; // Cooldown
+            meleeSwing = 1;
+            playSound('shoot');
+
+            // Damage nearby zombies
+            zombies.forEach(z => {
+                if (z.depth < MELEE_RANGE && Math.abs(z.x - player.x) < 50) {
+                    z.health -= MELEE_DAMAGE;
+                    z.depth += 20; // Knockback
+                    hitMarkers.push({ x: z.screenX || W/2, y: z.screenY || H/2, alpha: 1, melee: true });
+                    if (z.health <= 0) {
+                        kills++;
+                        playSound('zombieDie');
+                    }
+                }
+            });
+        }
+
+        function updateMelee() {
+            if (meleeCD > 0) meleeCD--;
+            if (meleeSwing > 0) meleeSwing -= 0.1;
+        }
+
+        // ============================================
+        // HAZARDS
+        // ============================================
+        function updateHazards() {
+            hazards.forEach(h => {
+                h.depth -= 2;
+                // Check zombie collision
+                zombies.forEach(z => {
+                    if (h.active && Math.abs(z.x - h.x) < HAZARD_TYPES[h.type].radius && Math.abs(z.depth - h.depth) < 30) {
+                        if (h.type === 'barrel') {
+                            // Explosive - damages all nearby, single use
+                            zombies.forEach(oz => {
+                                if (Math.abs(oz.x - h.x) < HAZARD_TYPES[h.type].radius && Math.abs(oz.depth - h.depth) < 50) {
+                                    oz.health -= HAZARD_TYPES[h.type].damage;
+                                }
+                            });
+                            playSound('explosion');
+                            screenShake = 10;
+                            h.active = false;
+                        } else {
+                            // Continuous damage
+                            if (frame % 30 === 0) z.health -= HAZARD_TYPES[h.type].damage;
+                        }
+                    }
+                });
+            });
+            hazards = hazards.filter(h => h.depth > 5 && h.active !== false);
+        }
+
+        function drawHazards() {
+            hazards.forEach(h => {
+                if (!h.active) return;
+                const scale = 200 / h.depth;
+                const screenX = centerX + (h.x - player.x) * scale * 3.5;
+                const screenY = horizon + (H - horizon) * (1 - h.depth / 200) * 1.5;
+                const size = 30 * scale;
+                if (size < 5) return;
+
+                const hazType = HAZARD_TYPES[h.type];
+                ctx.fillStyle = hazType.color;
+                ctx.globalAlpha = 0.7;
+                if (h.type === 'barrel') {
+                    ctx.fillRect(screenX - size/2, screenY - size, size, size);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(screenX - size/3, screenY - size * 0.9, size * 0.66, size * 0.3);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        // ============================================
+        // DAILY CHALLENGES
+        // ============================================
+        function generateDailyChallenges() {
+            const today = new Date().toDateString();
+            const lastReset = new Date(saveData.lastDailyReset).toDateString();
+            if (today !== lastReset) {
+                saveData.lastDailyReset = Date.now();
+                saveData.dailyChallengesCompleted = [];
+                dailyChallenges = [];
+                // Generate 3 random challenges
+                const shuffled = [...CHALLENGE_TYPES].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < 3; i++) {
+                    const ch = shuffled[i];
+                    const target = ch.targets[Math.floor(Math.random() * ch.targets.length)];
+                    dailyChallenges.push({
+                        id: `${ch.id}_${target}`,
+                        type: ch.id,
+                        name: ch.name.replace('{n}', target),
+                        target: target,
+                        reward: target * 2
+                    });
+                }
+                saveSave();
+            }
+        }
+
+        function checkAchievements() {
+            Object.entries(ACHIEVEMENTS).forEach(([id, ach]) => {
+                if (!saveData.achievements.includes(id) && ach.check()) {
+                    saveData.achievements.push(id);
+                    // Could show notification here
+                }
+            });
+        }
+
+        function checkHordeWave() {
+            if (gameType !== 'horde') return;
+            hordeKillsThisWave = kills % hordeKillsNeeded || kills;
+            if (kills > 0 && kills >= hordeWave * hordeKillsNeeded) {
+                // Wave complete!
+                hordeWave++;
+                hordeKillsNeeded = 10 + hordeWave * 5;
+                hordeKillsThisWave = 0;
+                // Give wave completion bonus
+                runGold += 50 + hordeWave * 10;
+                playSound('powerup');
+                screenShake = 10;
+                // Spawn a mini boss every 5 waves
+                if (hordeWave % 5 === 0 && hordeWave < 20) {
+                    spawnMiniBoss();
+                }
+                // Big boss at wave 10 and 20
+                if (hordeWave === 10 || hordeWave === 20) {
+                    spawnBoss();
+                }
+            }
+        }
+
+        // ============================================
         // SPAWNING
         // ============================================
         function spawnZombie() {
-            // Don't spawn normal zombies during boss fight
-            if (bossActive) return;
+            // Don't spawn normal zombies during boss fight (except in boss rush)
+            if (bossActive && gameType !== 'bossrush') return;
 
-            const rate = Math.max(12, 55 - distance / 70);
-            if (Math.random() > 1 / rate) return;
+            // Horde mode spawn rate
+            const baseRate = gameType === 'horde' ? Math.max(5, 30 - hordeWave * 2) : Math.max(12, 55 - distance / 70);
+            if (Math.random() > 1 / baseRate) return;
 
             let x = player.x + (Math.random() - 0.5) * 200;
             let depth = 220 + Math.random() * 40;
 
+            const diffMod = DIFFICULTY_MODS[difficulty];
             const roll = Math.random();
-            let hp = 40 + distance / 45;
-            let speed = 0.7 + Math.random() * 0.35;
+            let hp = (40 + distance / 45) * diffMod.health;
+            let speed = (0.7 + Math.random() * 0.35) * diffMod.speed;
             let zombieType = 'normal';
             let armor = 0;
+            let shield = 0;
+            let heals = false;
 
-            if (roll > 0.97 && distance > 3500) {
+            // NEW: Healer zombie (purple cross, heals nearby zombies)
+            if (roll > 0.98 && distance > 2000) {
+                zombieType = 'healer'; hp *= 0.5; speed *= 0.6; heals = true;
+            // NEW: Shielder zombie (has energy shield that must be broken)
+            } else if (roll > 0.96 && distance > 2500) {
+                zombieType = 'shielder'; hp *= 0.8; speed *= 0.7; shield = hp * 0.5;
+            } else if (roll > 0.94 && distance > 3500) {
                 zombieType = 'shadow'; hp *= 0.6; speed *= 2.2;
-            } else if (roll > 0.94 && distance > 2500) {
+            } else if (roll > 0.91 && distance > 2500) {
                 zombieType = 'armored'; hp *= 2; speed *= 0.7; armor = 0.5;
-            } else if (roll > 0.91 && distance > 2000) {
+            } else if (roll > 0.88 && distance > 2000) {
                 zombieType = 'exploder'; hp *= 0.8;
-            } else if (roll > 0.85 && distance > 1500) {
+            } else if (roll > 0.82 && distance > 1500) {
                 zombieType = 'spitter'; hp *= 0.7; speed *= 0.5;
-            } else if (roll > 0.78 && distance > 1000) {
+            } else if (roll > 0.75 && distance > 1000) {
                 zombieType = 'crawler'; hp *= 0.6; speed *= 1.5;
-            } else if (roll > 0.9 && distance > 1500) {
+            } else if (roll > 0.88 && distance > 1500) {
                 zombieType = 'tank'; hp *= 3; speed *= 0.55;
-            } else if (roll > 0.72 && distance > 800) {
+            } else if (roll > 0.68 && distance > 800) {
                 zombieType = 'fast'; hp *= 0.5; speed *= 1.9;
             }
 
-            zombies.push({ id: Math.random(), x, depth, speed, health: hp, maxHealth: hp, type: zombieType, attackCD: 0, spitCD: 0, armor, teleportCD: 0 });
+            zombies.push({
+                id: Math.random(), x, depth, speed, health: hp, maxHealth: hp,
+                type: zombieType, attackCD: 0, spitCD: 0, armor, teleportCD: 0,
+                shield, maxShield: shield, heals, healCD: 0
+            });
+        }
+
+        function spawnMiniBoss() {
+            if (bossActive) return;
+            const types = Object.keys(MINI_BOSSES);
+            const typeId = types[Math.floor(Math.random() * types.length)];
+            const mb = MINI_BOSSES[typeId];
+            const diffMod = DIFFICULTY_MODS[difficulty];
+
+            const hp = mb.health * diffMod.health;
+            zombies.push({
+                id: Math.random(), x: player.x + (Math.random() - 0.5) * 100,
+                depth: 240, speed: mb.speed * diffMod.speed,
+                health: hp, maxHealth: hp, type: 'miniboss', minibossType: typeId,
+                attackCD: 0, gold: mb.gold, color: mb.color
+            });
         }
 
         function spawnBoss() {
-            if (bossActive) return;
+            if (bossActive && gameType !== 'bossrush') return;
             playSound('bossRoar');
             screenShake = 15;
 
-            const hp = 500 + (distance / 1000) * 200;
-            bossActive = {
-                id: Math.random(), x: player.x, depth: 250, speed: 0.3, health: hp, maxHealth: hp, type: 'boss', attackCD: 0
+            const diffMod = DIFFICULTY_MODS[difficulty];
+            const hp = (500 + (distance / 1000) * 200) * diffMod.health;
+            const boss = {
+                id: Math.random(), x: player.x, depth: 250, speed: 0.3 * diffMod.speed,
+                health: hp, maxHealth: hp, type: 'boss', attackCD: 0
             };
-            zombies.push(bossActive);
+            bossActive = boss;
+            zombies.push(boss);
+        }
+
+        function spawnHazard() {
+            if (Math.random() > 0.005) return;
+            const types = Object.keys(HAZARD_TYPES);
+            const typeId = types[Math.floor(Math.random() * types.length)];
+            hazards.push({
+                x: player.x + (Math.random() - 0.5) * 300,
+                depth: 200 + Math.random() * 50,
+                type: typeId,
+                active: true
+            });
         }
 
         function spawnCrate() {
@@ -1674,13 +2406,31 @@
             distance += 2;
             distanceEl.textContent = distance;
 
-            // Check for boss spawn
-            if (distance >= nextBossDistance && !bossActive) {
-                spawnBoss();
-                nextBossDistance += 1000;
+            // Check for boss spawn - varies by game mode
+            if (gameType === 'bossrush') {
+                // Boss rush: spawn bosses much more frequently
+                if (distance >= nextBossDistance && !bossActive) {
+                    spawnBoss();
+                    nextBossDistance += 300;
+                    saveData.bossKills = (saveData.bossKills || 0) + 1;
+                }
+                // Win after 10 bosses
+                if (saveData.bossKills >= 10) victory();
+            } else if (gameType === 'horde') {
+                // Horde: wave-based, no distance-based bosses
+                // Wave progression handled by kills
+            } else {
+                // Classic or endless
+                if (distance >= nextBossDistance && !bossActive) {
+                    spawnBoss();
+                    nextBossDistance += 1000;
+                }
             }
 
-            if (distance >= 5000) victory();
+            // Victory conditions by game mode
+            if (gameType === 'classic' && distance >= 5000) victory();
+            else if (gameType === 'horde' && hordeWave > 20) victory();
+            // Endless and bossrush (until 10 bosses) have no auto-victory
         }
 
         function updateZombies() {
@@ -1695,6 +2445,32 @@
                         z.x += (Math.random() - 0.5) * 80;
                         z.teleportCD = 60 + Math.random() * 60;
                     }
+                }
+
+                // Healer zombie heals nearby zombies
+                if (z.type === 'healer' && z.heals) {
+                    z.healCD = (z.healCD || 0) - 1;
+                    if (z.healCD <= 0) {
+                        zombies.forEach(oz => {
+                            if (oz !== z && oz.health > 0 && Math.abs(oz.x - z.x) < 80 && Math.abs(oz.depth - z.depth) < 50) {
+                                oz.health = Math.min(oz.maxHealth, oz.health + 5);
+                            }
+                        });
+                        z.healCD = 60;
+                    }
+                }
+
+                // Shielder zombie regenerates shield when not hit
+                if (z.type === 'shielder' && z.shield < z.maxShield) {
+                    z.shieldRegenCD = (z.shieldRegenCD || 0) - 1;
+                    if (z.shieldRegenCD <= 0) {
+                        z.shield = Math.min(z.maxShield, z.shield + 1);
+                    }
+                }
+
+                // Time freeze ultimate stops zombies
+                if (ultimateActive && selectedUltimate === 'freeze') {
+                    z.depth += z.speed; // Cancel movement
                 }
 
                 // Burning damage over time
@@ -1931,8 +2707,24 @@
             document.getElementById('zombiesKilled').textContent = kills;
             document.getElementById('headshots').textContent = headshots;
             document.getElementById('goldEarned').textContent = runGold;
-            saveData.gold += runGold;
+
+            // Apply prestige gold bonus
+            const prestigeGold = 1 + (saveData.prestigeLevel * PRESTIGE_BONUSES.gold);
+            const finalGold = Math.floor(runGold * prestigeGold);
+            saveData.gold += finalGold;
+
+            // Update stats for achievements
+            saveData.totalKills = (saveData.totalKills || 0) + kills;
+            saveData.totalHeadshots = (saveData.totalHeadshots || 0) + headshots;
+            if (maxCombo > saveData.bestCombo) saveData.bestCombo = maxCombo;
             if (distance > saveData.bestDistance) saveData.bestDistance = distance;
+
+            // Game mode specific stats
+            if (difficulty === 'nightmare') saveData.nightmareWins = (saveData.nightmareWins || 0) + 1;
+            if (gameType === 'horde' && hordeWave > saveData.hordeBestWave) saveData.hordeBestWave = hordeWave;
+
+            // Check achievements
+            checkAchievements();
             saveSave();
             submitScore(distance, kills, headshots);
             renderLeaderboard('victoryLeaderboard', distance);
@@ -1962,8 +2754,24 @@
             document.getElementById('deathKills').textContent = kills;
             document.getElementById('deathHeadshots').textContent = headshots;
             document.getElementById('goldKept').textContent = runGold;
-            saveData.gold += runGold;
+
+            // Apply prestige gold bonus
+            const prestigeGold = 1 + (saveData.prestigeLevel * PRESTIGE_BONUSES.gold);
+            const finalGold = Math.floor(runGold * prestigeGold);
+            saveData.gold += finalGold;
+
+            // Update stats for achievements
+            saveData.totalKills = (saveData.totalKills || 0) + kills;
+            saveData.totalHeadshots = (saveData.totalHeadshots || 0) + headshots;
+            if (maxCombo > saveData.bestCombo) saveData.bestCombo = maxCombo;
             if (distance > saveData.bestDistance) saveData.bestDistance = distance;
+
+            // Game mode specific stats
+            if (gameType === 'endless' && distance > saveData.endlessBest) saveData.endlessBest = distance;
+            if (gameType === 'horde' && hordeWave > saveData.hordeBestWave) saveData.hordeBestWave = hordeWave;
+
+            // Check achievements
+            checkAchievements();
             saveSave();
             submitScore(distance, kills, headshots);
             renderLeaderboard('deathLeaderboard', distance);
@@ -1986,12 +2794,14 @@
             initAudio();
             gameMode = 'run';
             distance = 0; runGold = 0; kills = 0; headshots = 0; frame = 0;
-            nextBossDistance = 1000; bossActive = null;
+            nextBossDistance = gameType === 'bossrush' ? 100 : 1000;
+            bossActive = null;
             activePowerups = {};
 
-            // Apply perks
+            // Apply perks and prestige bonuses
             const thickSkin = saveData.perks.includes('thickSkin');
-            const baseMaxHP = thickSkin ? 125 : 100;
+            const prestigeHP = 1 + (saveData.prestigeLevel * PRESTIGE_BONUSES.health);
+            const baseMaxHP = Math.floor((thickSkin ? 125 : 100) * prestigeHP);
             const gun = getGunStats(saveData.equippedGun);
 
             player = {
@@ -2010,6 +2820,18 @@
             laserBeams = []; fireParticles = []; rocketTrails = [];
             deadZombies = []; weatherParticles = []; dangerIndicators = [];
 
+            // Reset new systems
+            ultimateCharge = 0; ultimateActive = false; ultimateTimer = 0;
+            selectedUltimate = saveData.selectedUltimate || 'nuke';
+            meleeCD = 0; meleeSwing = 0;
+            hazards = [];
+            dailyProgress = { kills: 0, headshots: 0, distance: 0, combo: 0, bossKills: 0, noHit: 0, pistolOnly: 0, grenadeKills: 0 };
+
+            // Horde mode setup
+            hordeWave = gameType === 'horde' ? 1 : 0;
+            hordeKillsNeeded = gameType === 'horde' ? 10 : 0;
+            hordeKillsThisWave = 0;
+
             activePets = [];
             saveData.activePets.forEach((petId, i) => {
                 activePets.push({ type: petId, x: player.x, depth: 25, offset: (i - (saveData.activePets.length - 1) / 2) * 30, lastAttack: 0, attackFlash: 0 });
@@ -2023,7 +2845,10 @@
             document.getElementById('runHud').style.display = 'flex';
             document.getElementById('runInstructions').classList.remove('hidden');
             document.getElementById('lobbyInstructions').classList.add('hidden');
-            document.getElementById('gameTitle').textContent = 'LAST RUN';
+
+            // Set title based on game mode
+            const modeTitles = { classic: 'LAST RUN', endless: 'ENDLESS RUN', bossrush: 'BOSS RUSH', horde: 'HORDE MODE' };
+            document.getElementById('gameTitle').textContent = modeTitles[gameType] || 'LAST RUN';
             canvas.style.cursor = 'none';
         }
 
@@ -2081,6 +2906,57 @@
                         } else playSound('empty');
                     }
                 }
+            } else if (activeShop === 'skins') {
+                const skinIds = Object.keys(WEAPON_SKINS);
+                if (index >= 0 && index < skinIds.length) {
+                    const skinId = skinIds[index];
+                    const skin = WEAPON_SKINS[skinId];
+                    if (saveData.weaponSkins.owned.includes(skinId)) {
+                        saveData.weaponSkins.equipped = skinId;
+                        playSound('pickup'); saveSave();
+                    } else if (saveData.gold >= skin.price) {
+                        saveData.gold -= skin.price;
+                        saveData.weaponSkins.owned.push(skinId);
+                        saveData.weaponSkins.equipped = skinId;
+                        playSound('buy'); saveSave();
+                    } else playSound('empty');
+                }
+            } else if (activeShop === 'ultimate') {
+                const ultIds = Object.keys(ULTIMATES);
+                if (index >= 0 && index < ultIds.length) {
+                    saveData.selectedUltimate = ultIds[index];
+                    selectedUltimate = ultIds[index];
+                    playSound('pickup'); saveSave();
+                }
+            } else if (activeShop === 'mode') {
+                const modes = ['classic', 'endless', 'bossrush', 'horde'];
+                if (index >= 0 && index < modes.length) {
+                    gameType = modes[index];
+                    playSound('pickup');
+                }
+            } else if (activeShop === 'difficulty') {
+                const diffs = ['easy', 'normal', 'hard', 'nightmare'];
+                if (index >= 0 && index < diffs.length) {
+                    difficulty = diffs[index];
+                    playSound('pickup');
+                }
+            } else if (activeShop === 'prestige') {
+                if (index === 0) {
+                    const cost = 1000 * (saveData.prestigeLevel + 1);
+                    if (saveData.gold >= cost) {
+                        saveData.gold -= cost;
+                        saveData.prestigeLevel++;
+                        // Reset progress but keep achievements
+                        saveData.ownedGuns = ['pistol'];
+                        saveData.equippedGun = 'pistol';
+                        saveData.ownedPets = [];
+                        saveData.activePets = [];
+                        saveData.perks = [];
+                        saveData.gunUpgrades = {};
+                        saveData.weaponSkins = { owned: ['default'], equipped: 'default' };
+                        playSound('powerup'); saveSave();
+                    } else playSound('empty');
+                }
             }
         }
 
@@ -2102,7 +2978,22 @@
                 updatePlayer();
                 if (mouseDown) shoot();
                 spawnZombie(); spawnCrate(); spawnPowerup();
+                // Spawn hazards occasionally
+                if (Math.random() < 0.002 && distance > 500) {
+                    const hazardTypes = Object.keys(HAZARD_TYPES);
+                    hazards.push({
+                        x: player.x + (Math.random() - 0.5) * 150,
+                        depth: 230 + Math.random() * 30,
+                        type: hazardTypes[Math.floor(Math.random() * hazardTypes.length)],
+                        active: true
+                    });
+                }
+                // Spawn mini boss every 500m
+                if (distance > 0 && distance % 500 < 5 && Math.random() < 0.02 && !bossActive) {
+                    spawnMiniBoss();
+                }
                 updateZombies(); updateProjectiles(); updateCrates(); updatePowerups(); updatePets(); updateGrenades(); updateEffects();
+                updateUltimate(); updateMelee(); updateHazards(); checkHordeWave();
 
                 const objects = [
                     ...zombies.map(z => ({ type: 'zombie', obj: z, depth: z.depth })),
@@ -2110,7 +3001,8 @@
                     ...powerups.map(p => ({ type: 'powerup', obj: p, depth: p.depth })),
                     ...projectiles.map(p => ({ type: 'projectile', obj: p, depth: p.depth })),
                     ...activePets.map(p => ({ type: 'pet', obj: p, depth: p.depth })),
-                    ...grenades.map(g => ({ type: 'grenade', obj: g, depth: g.depth }))
+                    ...grenades.map(g => ({ type: 'grenade', obj: g, depth: g.depth })),
+                    ...hazards.map(h => ({ type: 'hazard', obj: h, depth: h.depth }))
                 ].sort((a, b) => b.depth - a.depth);
 
                 objects.forEach(o => {
@@ -2120,6 +3012,7 @@
                     else if (o.type === 'projectile') drawProjectile(o.obj);
                     else if (o.type === 'pet') drawPet(o.obj);
                     else if (o.type === 'grenade') drawGrenades();
+                    else if (o.type === 'hazard') drawHazards();
                 });
 
                 drawWeather(); drawDeadZombies(); drawBlood(); drawHitMarkers(); drawWeaponEffects(); drawParticles(); drawGun(); drawCrosshair(); drawRunHUD();
@@ -2149,6 +3042,8 @@
             } else if (gameMode === 'run') {
                 if (e.key === 'r' || e.key === 'R') startReload();
                 if (e.key === 'g' || e.key === 'G') throwGrenade();
+                if (e.key === 'q' || e.key === 'Q') activateUltimate();
+                if (e.key === 'v' || e.key === 'V') meleeAttack();
             }
         });
         document.addEventListener('keyup', e => { keys[e.key] = false; });
