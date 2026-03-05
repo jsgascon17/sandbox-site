@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Run - Learning Sandbox</title>
+    <title>Last Run - Zombie Survival</title>
     <style>
         * {
             margin: 0;
@@ -74,7 +74,6 @@
             color: #fff;
         }
 
-        /* Overlays */
         .overlay {
             position: fixed;
             top: 0;
@@ -127,7 +126,6 @@
             box-shadow: 0 3px 0 #a02040;
         }
 
-        /* Shop Panel */
         .shop-panel {
             background: rgba(0, 0, 0, 0.95);
             border: 3px solid #ffd700;
@@ -186,7 +184,6 @@
         .item-name {
             color: #fff;
             font-weight: bold;
-            font-size: 1.1rem;
         }
 
         .item-desc {
@@ -208,95 +205,74 @@
             font-family: 'Courier New', monospace;
         }
 
-        .item-btn.buy {
-            background: #ffd700;
-            color: #333;
-        }
-
-        .item-btn.equip {
-            background: #2196F3;
-            color: #fff;
-        }
-
-        .item-btn.equipped {
-            background: #4CAF50;
-            color: #fff;
-        }
-
-        .item-btn:disabled {
-            background: #555;
-            color: #888;
-            cursor: not-allowed;
-        }
-
-        .fps-icon {
-            font-size: 5rem;
-            margin-bottom: 20px;
-        }
+        .item-btn.buy { background: #ffd700; color: #333; }
+        .item-btn.equip { background: #2196F3; color: #fff; }
+        .item-btn.equipped { background: #4CAF50; color: #fff; }
+        .item-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <h1>ZOMBIE RUN</h1>
+    <h1>LAST RUN</h1>
 
     <div class="hud">
-        <div class="hud-item">Distance: <span id="distance">0</span> / 5000</div>
-        <div class="hud-item">Gold: <span id="gold">0</span> 🪙</div>
-        <div class="hud-item">Health: <span id="health">100</span> ❤️</div>
-        <div class="hud-item">Gun: <span id="gunName">Pistol</span></div>
-        <div class="hud-item">Ammo: <span id="ammo">∞</span></div>
+        <div class="hud-item">Distance: <span id="distance">0</span>m</div>
+        <div class="hud-item">Gold: <span id="gold">0</span></div>
+        <div class="hud-item">Health: <span id="health">100</span></div>
+        <div class="hud-item"><span id="gunName">Pistol</span> [<span id="ammo">∞</span>]</div>
     </div>
 
     <canvas id="gameCanvas" width="900" height="550"></canvas>
 
     <div class="instructions">
-        <span>MOUSE</span> Aim | <span>CLICK</span> Shoot | <span>R</span> Reload | <span>P</span> Pause
+        <span>W</span> Run | <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>P</span> Pause
         <button id="soundBtn" style="background: #333; border: 2px solid #e94560; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
 
     <!-- Start Screen -->
     <div class="overlay" id="startScreen">
-        <div class="fps-icon">🔫</div>
-        <h2>ZOMBIE RUN</h2>
-        <p>First-Person Zombie Survival!</p>
-        <p>Reach distance 5000 to escape!</p>
-        <p style="color: #ffd700;">Collect gold • Buy upgrades • Stay alive!</p>
-        <button class="btn" id="startBtn">START RUN</button>
+        <h2 style="font-size: 3rem;">LAST RUN</h2>
+        <p style="font-size: 1.3rem; color: #e94560;">YOU CAN ONLY MOVE FORWARD</p>
+        <p>Sprint through farms, forests, and cities</p>
+        <p>as the horde closes in...</p>
+        <p style="color: #ffd700; margin-top: 20px;">Fight if you can. Run if you must.</p>
+        <p style="color: #aaa;">Every meter counts.</p>
+        <button class="btn" id="startBtn" style="margin-top: 20px;">START RUN</button>
     </div>
 
     <!-- Shop Screen -->
     <div class="overlay hidden" id="shopScreen">
         <div class="shop-panel">
-            <div class="shop-title">⚔️ CHECKPOINT SHOP ⚔️</div>
-            <div class="shop-gold">Gold: <span id="shopGold">0</span> 🪙</div>
+            <div class="shop-title">⚔️ CHECKPOINT ⚔️</div>
+            <div class="shop-gold">Gold: <span id="shopGold">0</span></div>
             <div class="shop-items" id="shopItems"></div>
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn" id="continueBtn">CONTINUE RUN</button>
+                <button class="btn" id="continueBtn">KEEP RUNNING</button>
             </div>
         </div>
     </div>
 
     <!-- Victory Screen -->
     <div class="overlay hidden" id="victoryScreen">
-        <h2 style="color: #4CAF50;">🎉 YOU ESCAPED! 🎉</h2>
-        <p>You survived the zombie apocalypse!</p>
-        <p>Distance: <span id="finalDistance">5000</span></p>
+        <h2 style="color: #4CAF50;">YOU ESCAPED!</h2>
+        <p>You survived the apocalypse!</p>
+        <p>Distance: <span id="finalDistance">5000</span>m</p>
         <p>Zombies Killed: <span id="zombiesKilled">0</span></p>
-        <p>Gold Collected: <span id="totalGold">0</span></p>
-        <button class="btn" id="victoryBtn">PLAY AGAIN</button>
+        <p>Gold: <span id="totalGold">0</span></p>
+        <button class="btn" id="victoryBtn">RUN AGAIN</button>
     </div>
 
     <!-- Game Over Screen -->
     <div class="overlay hidden" id="gameOverScreen">
-        <h2>💀 YOU DIED 💀</h2>
-        <p>The zombies got you...</p>
-        <p>Distance: <span id="deathDistance">0</span></p>
-        <p>Zombies Killed: <span id="deathKills">0</span></p>
+        <h2>YOU DIED</h2>
+        <p style="color: #888;">The horde got you...</p>
+        <p>Distance: <span id="deathDistance">0</span>m</p>
+        <p>Kills: <span id="deathKills">0</span></p>
         <button class="btn" id="restartBtn">TRY AGAIN</button>
     </div>
 
     <script>
         // ============================================
-        // AUDIO SYSTEM
+        // AUDIO
         // ============================================
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx = null;
@@ -314,189 +290,57 @@
             gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
 
-            if (type === 'shoot') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'shotgun') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'rifle') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(80, now + 0.05);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
-            } else if (type === 'zombieHit') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'zombieDie') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'playerHit') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'goldPickup') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.setValueAtTime(1000, now + 0.05);
-                osc.frequency.setValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'heal') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.setValueAtTime(600, now + 0.1);
-                osc.frequency.setValueAtTime(800, now + 0.2);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-                osc.start(now); osc.stop(now + 0.25);
-            } else if (type === 'checkpoint') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523, now);
-                osc.frequency.setValueAtTime(659, now + 0.15);
-                osc.frequency.setValueAtTime(784, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            } else if (type === 'buy') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.setValueAtTime(800, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'empty') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(100, now);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
-            } else if (type === 'reload') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.setValueAtTime(400, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            }
+            const sounds = {
+                shoot: () => { osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); },
+                shotgun: () => { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(30, now + 0.15); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15); },
+                rifle: () => { osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.05); gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(now); osc.stop(now + 0.05); },
+                zombieHit: () => { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1); gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); },
+                zombieDie: () => { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.3); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3); osc.start(now); osc.stop(now + 0.3); },
+                playerHit: () => { osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.2); gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2); },
+                pickup: () => { osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.setValueAtTime(1200, now + 0.1); gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15); },
+                crate: () => { osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.setValueAtTime(400, now + 0.05); osc.frequency.setValueAtTime(600, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15); osc.start(now); osc.stop(now + 0.15); },
+                checkpoint: () => { osc.type = 'sine'; osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now + 0.15); osc.frequency.setValueAtTime(784, now + 0.3); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5); osc.start(now); osc.stop(now + 0.5); },
+                empty: () => { osc.type = 'square'; osc.frequency.setValueAtTime(100, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); osc.start(now); osc.stop(now + 0.05); },
+                reload: () => { osc.type = 'square'; osc.frequency.setValueAtTime(300, now); osc.frequency.setValueAtTime(400, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
+            };
+            if (sounds[type]) sounds[type]();
         }
 
         // ============================================
-        // CANVAS SETUP
+        // CANVAS
         // ============================================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const horizon = canvas.height * 0.35;
+        const W = canvas.width;
+        const H = canvas.height;
+        const centerX = W / 2;
+        const horizon = H * 0.35;
 
         // ============================================
-        // GUNS DATA
+        // GUNS
         // ============================================
         const GUNS = {
-            pistol: {
-                name: 'Pistol',
-                damage: 25,
-                fireRate: 300,
-                spread: 0.02,
-                bullets: 1,
-                ammoMax: Infinity,
-                price: 0,
-                sound: 'shoot',
-                color: '#333'
-            },
-            shotgun: {
-                name: 'Shotgun',
-                damage: 20,
-                fireRate: 800,
-                spread: 0.15,
-                bullets: 5,
-                ammoMax: 30,
-                price: 100,
-                sound: 'shotgun',
-                color: '#5c4033'
-            },
-            smg: {
-                name: 'SMG',
-                damage: 15,
-                fireRate: 80,
-                spread: 0.08,
-                bullets: 1,
-                ammoMax: 150,
-                price: 200,
-                sound: 'rifle',
-                color: '#2c3e50'
-            },
-            rifle: {
-                name: 'Assault Rifle',
-                damage: 35,
-                fireRate: 120,
-                spread: 0.03,
-                bullets: 1,
-                ammoMax: 90,
-                price: 350,
-                sound: 'rifle',
-                color: '#1a1a1a'
-            },
-            sniper: {
-                name: 'Sniper',
-                damage: 150,
-                fireRate: 1500,
-                spread: 0,
-                bullets: 1,
-                ammoMax: 20,
-                price: 500,
-                sound: 'shotgun',
-                color: '#2d3436'
-            },
-            minigun: {
-                name: 'Minigun',
-                damage: 12,
-                fireRate: 40,
-                spread: 0.12,
-                bullets: 1,
-                ammoMax: 400,
-                price: 800,
-                sound: 'rifle',
-                color: '#444'
-            }
+            pistol: { name: 'Pistol', damage: 25, fireRate: 250, spread: 0.03, bullets: 1, ammoMax: Infinity, price: 0, sound: 'shoot' },
+            shotgun: { name: 'Shotgun', damage: 18, fireRate: 700, spread: 0.18, bullets: 6, ammoMax: 30, price: 100, sound: 'shotgun' },
+            smg: { name: 'SMG', damage: 12, fireRate: 70, spread: 0.1, bullets: 1, ammoMax: 150, price: 200, sound: 'rifle' },
+            rifle: { name: 'Rifle', damage: 40, fireRate: 130, spread: 0.02, bullets: 1, ammoMax: 90, price: 350, sound: 'rifle' },
+            sniper: { name: 'Sniper', damage: 150, fireRate: 1200, spread: 0, bullets: 1, ammoMax: 15, price: 500, sound: 'shotgun' },
+            minigun: { name: 'Minigun', damage: 10, fireRate: 35, spread: 0.15, bullets: 1, ammoMax: 400, price: 800, sound: 'rifle' }
         };
 
         // ============================================
-        // SHOP ITEMS
+        // SHOP
         // ============================================
         const SHOP_ITEMS = [
-            { id: 'bandage', name: 'Bandage', desc: 'Restore 25 HP', price: 20, type: 'consumable', heal: 25 },
-            { id: 'medkit', name: 'Med Kit', desc: 'Restore 75 HP', price: 50, type: 'consumable', heal: 75 },
-            { id: 'armor', name: 'Armor Vest', desc: 'Reduce damage by 25%', price: 150, type: 'upgrade', effect: 'armor' },
-            { id: 'shotgun', name: 'Shotgun', desc: '5 pellets, high spread', price: GUNS.shotgun.price, type: 'gun', gunId: 'shotgun' },
-            { id: 'smg', name: 'SMG', desc: 'Fast fire rate', price: GUNS.smg.price, type: 'gun', gunId: 'smg' },
-            { id: 'rifle', name: 'Assault Rifle', desc: 'Balanced power', price: GUNS.rifle.price, type: 'gun', gunId: 'rifle' },
-            { id: 'sniper', name: 'Sniper Rifle', desc: 'One shot kills', price: GUNS.sniper.price, type: 'gun', gunId: 'sniper' },
-            { id: 'minigun', name: 'Minigun', desc: 'Spray and pray', price: GUNS.minigun.price, type: 'gun', gunId: 'minigun' },
-            { id: 'ammo', name: 'Ammo Pack', desc: 'Refill current gun ammo', price: 30, type: 'consumable', effect: 'ammo' }
+            { id: 'bandage', name: 'Bandage', desc: '+25 HP', price: 15, type: 'heal', value: 25 },
+            { id: 'medkit', name: 'Med Kit', desc: '+75 HP', price: 40, type: 'heal', value: 75 },
+            { id: 'armor', name: 'Armor', desc: '-25% damage', price: 150, type: 'armor' },
+            { id: 'shotgun', name: 'Shotgun', desc: '6 pellets', price: 100, type: 'gun', gunId: 'shotgun' },
+            { id: 'smg', name: 'SMG', desc: 'Fast fire', price: 200, type: 'gun', gunId: 'smg' },
+            { id: 'rifle', name: 'Rifle', desc: 'High damage', price: 350, type: 'gun', gunId: 'rifle' },
+            { id: 'sniper', name: 'Sniper', desc: '1-shot kills', price: 500, type: 'gun', gunId: 'sniper' },
+            { id: 'minigun', name: 'Minigun', desc: 'Bullet storm', price: 800, type: 'gun', gunId: 'minigun' },
+            { id: 'ammo', name: 'Ammo', desc: 'Refill ammo', price: 25, type: 'ammo' }
         ];
 
         // ============================================
@@ -506,374 +350,398 @@
         let gamePaused = false;
         let distance = 0;
         let gold = 0;
-        let totalGoldCollected = 0;
-        let zombiesKilled = 0;
+        let totalGold = 0;
+        let kills = 0;
         let nextCheckpoint = 1000;
-        let frameCount = 0;
+        let frame = 0;
 
-        // Player state
+        // Player
         let player = {
+            x: 0, // -1 to 1 (left to right)
             health: 100,
             maxHealth: 100,
-            currentGun: 'pistol',
+            gun: 'pistol',
             ammo: Infinity,
             lastShot: 0,
-            hasArmor: false,
+            armor: false,
             ownedGuns: ['pistol'],
-            gunRecoil: 0
+            recoil: 0
         };
 
-        // Arrays
-        let zombies = [];
-        let goldDrops = [];
-        let muzzleFlash = 0;
-        let hitMarkers = [];
-        let bloodSplats = [];
-        let damageFlash = 0;
+        // Environment
+        let environment = 'farm'; // farm, forest, city
 
-        // Mouse position
+        // Game objects
+        let zombies = [];
+        let crates = [];
+        let particles = [];
+        let bloodSplats = [];
+
+        // Visual effects
+        let muzzleFlash = 0;
+        let damageFlash = 0;
+        let hitMarkers = [];
+        let screenShake = 0;
+
+        // Input
+        let keys = {};
         let mouseX = centerX;
-        let mouseY = centerY;
+        let mouseY = H / 2;
         let mouseDown = false;
 
-        // DOM Elements
-        const distanceDisplay = document.getElementById('distance');
-        const goldDisplay = document.getElementById('gold');
-        const healthDisplay = document.getElementById('health');
-        const gunNameDisplay = document.getElementById('gunName');
-        const ammoDisplay = document.getElementById('ammo');
-        const startScreen = document.getElementById('startScreen');
-        const shopScreen = document.getElementById('shopScreen');
-        const victoryScreen = document.getElementById('victoryScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
+        // DOM
+        const distanceEl = document.getElementById('distance');
+        const goldEl = document.getElementById('gold');
+        const healthEl = document.getElementById('health');
+        const gunEl = document.getElementById('gunName');
+        const ammoEl = document.getElementById('ammo');
 
         // ============================================
-        // DRAWING FUNCTIONS
+        // ENVIRONMENT DRAWING
         // ============================================
-        function drawBackground() {
-            // Sky gradient (dark apocalyptic)
-            const skyGrad = ctx.createLinearGradient(0, 0, 0, horizon);
-            skyGrad.addColorStop(0, '#0a0a15');
-            skyGrad.addColorStop(0.5, '#1a1a2e');
-            skyGrad.addColorStop(1, '#2d1f3d');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, canvas.width, horizon);
+        function getEnvironment() {
+            if (distance < 1500) return 'farm';
+            if (distance < 3000) return 'forest';
+            return 'city';
+        }
+
+        function drawSky() {
+            const env = getEnvironment();
+            const grad = ctx.createLinearGradient(0, 0, 0, horizon);
+
+            if (env === 'farm') {
+                grad.addColorStop(0, '#1a0a1a');
+                grad.addColorStop(1, '#3d1f3d');
+            } else if (env === 'forest') {
+                grad.addColorStop(0, '#0a1a0a');
+                grad.addColorStop(1, '#1a3d1a');
+            } else {
+                grad.addColorStop(0, '#0a0a1a');
+                grad.addColorStop(1, '#1a1a3d');
+            }
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, horizon);
 
             // Moon
             ctx.fillStyle = '#ddd';
             ctx.beginPath();
-            ctx.arc(canvas.width - 100, 60, 30, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#bbb';
-            ctx.beginPath();
-            ctx.arc(canvas.width - 95, 55, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(canvas.width - 110, 65, 5, 0, Math.PI * 2);
+            ctx.arc(W - 80, 50, 25, 0, Math.PI * 2);
             ctx.fill();
 
             // Stars
             ctx.fillStyle = '#fff';
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 73 + frameCount * 0.02) % canvas.width;
-                const y = (i * 31) % (horizon - 20) + 10;
-                const size = (i % 3) + 1;
-                ctx.globalAlpha = 0.3 + (Math.sin(frameCount * 0.05 + i) + 1) * 0.35;
-                ctx.fillRect(x, y, size, size);
+            for (let i = 0; i < 40; i++) {
+                const x = (i * 73 + frame * 0.01) % W;
+                const y = (i * 29) % (horizon - 20) + 10;
+                ctx.globalAlpha = 0.3 + Math.sin(frame * 0.03 + i) * 0.3;
+                ctx.fillRect(x, y, 2, 2);
             }
             ctx.globalAlpha = 1;
+        }
 
-            // Ground (perspective road)
-            const groundGrad = ctx.createLinearGradient(0, horizon, 0, canvas.height);
-            groundGrad.addColorStop(0, '#1a1a1a');
-            groundGrad.addColorStop(1, '#2d2d2d');
-            ctx.fillStyle = groundGrad;
-            ctx.fillRect(0, horizon, canvas.width, canvas.height - horizon);
+        function drawGround() {
+            const env = getEnvironment();
+            const grad = ctx.createLinearGradient(0, horizon, 0, H);
 
-            // Road
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.moveTo(centerX - 20, horizon);
-            ctx.lineTo(0, canvas.height);
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.lineTo(centerX + 20, horizon);
-            ctx.fill();
+            if (env === 'farm') {
+                grad.addColorStop(0, '#3d2817');
+                grad.addColorStop(1, '#5c4033');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, horizon, W, H - horizon);
 
-            // Road lines (perspective)
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 10; i++) {
-                const t = (i * 0.1 + (frameCount * 0.01) % 0.1);
-                const y = horizon + (canvas.height - horizon) * t;
-                const width = 5 + t * 30;
-                const lineWidth = 2 + t * 8;
+                // Wheat/grass
+                ctx.fillStyle = '#8b7355';
+                for (let i = 0; i < 60; i++) {
+                    const x = (i * 37 - frame * 3) % (W + 100) - 50;
+                    const t = (H - horizon) * 0.3;
+                    const y = horizon + t + Math.random() * 20;
+                    const h = 20 + Math.random() * 30;
+                    ctx.fillRect(x, y, 3, -h);
+                }
+            } else if (env === 'forest') {
+                grad.addColorStop(0, '#1a3d1a');
+                grad.addColorStop(1, '#0d260d');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, horizon, W, H - horizon);
 
-                if (t > 0.1) {
-                    ctx.globalAlpha = Math.min(1, t * 2);
-                    ctx.lineWidth = lineWidth;
+                // Trees in distance
+                ctx.fillStyle = '#0a1a0a';
+                for (let i = 0; i < 20; i++) {
+                    const x = (i * 60) % W;
+                    const h = 40 + (i % 3) * 20;
                     ctx.beginPath();
-                    ctx.moveTo(centerX - width, y);
-                    ctx.lineTo(centerX + width, y);
-                    ctx.stroke();
+                    ctx.moveTo(x, horizon);
+                    ctx.lineTo(x + 15, horizon - h);
+                    ctx.lineTo(x + 30, horizon);
+                    ctx.fill();
+                }
+            } else {
+                grad.addColorStop(0, '#2d2d2d');
+                grad.addColorStop(1, '#1a1a1a');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, horizon, W, H - horizon);
+
+                // Buildings
+                ctx.fillStyle = '#0a0a0a';
+                for (let i = 0; i < 15; i++) {
+                    const x = i * 70;
+                    const h = 50 + (i % 4) * 30;
+                    ctx.fillRect(x, horizon - h, 50, h);
+                    // Windows
+                    ctx.fillStyle = Math.random() > 0.7 ? '#ffff66' : '#1a1a1a';
+                    for (let wy = horizon - h + 10; wy < horizon - 10; wy += 15) {
+                        for (let wx = x + 5; wx < x + 45; wx += 12) {
+                            ctx.fillRect(wx, wy, 8, 10);
+                        }
+                    }
+                    ctx.fillStyle = '#0a0a0a';
                 }
             }
+
+            // Road/path
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(centerX - 30, horizon);
+            ctx.lineTo(-100, H);
+            ctx.lineTo(W + 100, H);
+            ctx.lineTo(centerX + 30, horizon);
+            ctx.fill();
+
+            // Road lines
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 12; i++) {
+                const t = (i * 0.08 + (frame * 0.015) % 0.08);
+                if (t < 0.05) continue;
+                const y = horizon + (H - horizon) * t;
+                const w = 5 + t * 40;
+                ctx.globalAlpha = Math.min(1, t * 3);
+                ctx.beginPath();
+                ctx.moveTo(centerX - w, y);
+                ctx.lineTo(centerX + w, y);
+                ctx.stroke();
+            }
             ctx.globalAlpha = 1;
+        }
 
-            // Side barriers/walls perspective
-            ctx.fillStyle = '#1a472a';
-            // Left side
-            ctx.beginPath();
-            ctx.moveTo(0, horizon);
-            ctx.lineTo(centerX - 25, horizon);
-            ctx.lineTo(0, canvas.height);
-            ctx.fill();
-            // Right side
-            ctx.beginPath();
-            ctx.moveTo(canvas.width, horizon);
-            ctx.lineTo(centerX + 25, horizon);
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.fill();
+        function drawFog() {
+            // Atmospheric fog
+            const grad = ctx.createLinearGradient(0, horizon, 0, horizon + 150);
+            grad.addColorStop(0, 'rgba(100, 100, 120, 0.6)');
+            grad.addColorStop(1, 'rgba(100, 100, 120, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, horizon, W, 150);
 
-            // Distant buildings silhouette
-            ctx.fillStyle = '#0a0a15';
-            for (let i = 0; i < 15; i++) {
-                const x = i * 70 - 50;
-                const w = 40 + (i % 3) * 20;
-                const h = 30 + (i % 4) * 15;
-                ctx.fillRect(x, horizon - h, w, h);
+            // Moving fog wisps
+            ctx.fillStyle = 'rgba(150, 150, 170, 0.3)';
+            for (let i = 0; i < 8; i++) {
+                const x = (i * 150 + frame * 0.5) % (W + 200) - 100;
+                const y = horizon + 20 + Math.sin(frame * 0.02 + i) * 20;
+                ctx.beginPath();
+                ctx.ellipse(x, y, 80 + Math.sin(i) * 20, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
         }
 
-        function drawZombie(zombie) {
-            // Calculate screen position based on depth
-            const depth = zombie.z;
-            const scale = 200 / depth;
-            const screenX = centerX + (zombie.x - centerX) * scale;
-            const screenY = horizon + (canvas.height - horizon) * (1 - depth / 200) * 1.5;
+        // ============================================
+        // ZOMBIE DRAWING
+        // ============================================
+        function drawZombie(z) {
+            const scale = 180 / z.depth;
+            const screenX = centerX + z.x * scale * 3;
+            const screenY = horizon + (H - horizon) * (1 - z.depth / 180) * 1.4;
+            const size = 70 * scale;
 
-            const size = 80 * scale;
-            if (size < 5 || screenY < horizon - 20) return;
+            if (size < 8 || screenY < horizon - 30) return;
 
-            zombie.screenX = screenX;
-            zombie.screenY = screenY;
-            zombie.screenSize = size;
+            z.screenX = screenX;
+            z.screenY = screenY;
+            z.screenSize = size;
 
             ctx.save();
             ctx.translate(screenX, screenY);
 
             // Shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
             ctx.beginPath();
-            ctx.ellipse(0, size * 0.1, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, size * 0.05, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // Zombie body
-            const wobble = Math.sin(frameCount * 0.1 + zombie.x) * 0.1;
+            // Wobble animation
+            const wobble = Math.sin(frame * 0.12 + z.id) * 0.08;
             ctx.rotate(wobble);
 
             // Legs
             ctx.fillStyle = '#2d3748';
-            ctx.fillRect(-size * 0.2, -size * 0.3, size * 0.15, size * 0.35);
-            ctx.fillRect(size * 0.05, -size * 0.3, size * 0.15, size * 0.35);
+            ctx.fillRect(-size * 0.18, -size * 0.25, size * 0.14, size * 0.3);
+            ctx.fillRect(size * 0.04, -size * 0.25, size * 0.14, size * 0.3);
 
             // Body
             ctx.fillStyle = '#4a5568';
-            ctx.fillRect(-size * 0.25, -size * 0.7, size * 0.5, size * 0.45);
-
-            // Torn clothes detail
-            ctx.fillStyle = '#2d3748';
-            ctx.fillRect(-size * 0.2, -size * 0.5, size * 0.15, size * 0.2);
+            ctx.fillRect(-size * 0.22, -size * 0.6, size * 0.44, size * 0.4);
 
             // Head
-            ctx.fillStyle = '#5f9654';
-            ctx.fillRect(-size * 0.2, -size * 1.0, size * 0.4, size * 0.35);
+            ctx.fillStyle = z.type === 'fast' ? '#7a9654' : z.type === 'tank' ? '#4a6634' : '#5f9654';
+            ctx.fillRect(-size * 0.18, -size * 0.9, size * 0.36, size * 0.32);
 
-            // Rotting patches
-            ctx.fillStyle = '#3d6b35';
-            ctx.fillRect(-size * 0.15, -size * 0.95, size * 0.12, size * 0.12);
-            ctx.fillRect(size * 0.05, -size * 0.85, size * 0.1, size * 0.1);
-
-            // Eyes
+            // Eyes (glowing red)
             ctx.fillStyle = '#ff0000';
-            ctx.fillRect(-size * 0.12, -size * 0.88, size * 0.08, size * 0.08);
-            ctx.fillRect(size * 0.04, -size * 0.88, size * 0.08, size * 0.08);
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = size * 0.1;
+            ctx.fillRect(-size * 0.1, -size * 0.8, size * 0.07, size * 0.07);
+            ctx.fillRect(size * 0.03, -size * 0.8, size * 0.07, size * 0.07);
+            ctx.shadowBlur = 0;
 
-            // Mouth
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(-size * 0.1, -size * 0.72, size * 0.2, size * 0.08);
-
-            // Arms reaching forward
-            ctx.fillStyle = '#5f9654';
-            const armReach = Math.sin(frameCount * 0.15 + zombie.x) * size * 0.05;
-            ctx.fillRect(-size * 0.4 + armReach, -size * 0.65, size * 0.2, size * 0.1);
-            ctx.fillRect(size * 0.2 - armReach, -size * 0.6, size * 0.2, size * 0.1);
+            // Arms reaching
+            ctx.fillStyle = z.type === 'fast' ? '#7a9654' : '#5f9654';
+            const reach = Math.sin(frame * 0.15 + z.id) * size * 0.04;
+            ctx.fillRect(-size * 0.35 + reach, -size * 0.55, size * 0.18, size * 0.08);
+            ctx.fillRect(size * 0.17 - reach, -size * 0.5, size * 0.18, size * 0.08);
 
             ctx.restore();
 
-            // Health bar for tough zombies
-            if (zombie.maxHealth > 50 && size > 20) {
-                const barWidth = size * 0.6;
-                const barHeight = 4;
-                const barY = screenY - size * 1.1;
+            // Health bar for tanks
+            if (z.type === 'tank' && size > 25) {
+                const bw = size * 0.5;
                 ctx.fillStyle = '#333';
-                ctx.fillRect(screenX - barWidth/2, barY, barWidth, barHeight);
+                ctx.fillRect(screenX - bw/2, screenY - size - 8, bw, 5);
                 ctx.fillStyle = '#e94560';
-                ctx.fillRect(screenX - barWidth/2, barY, barWidth * (zombie.health / zombie.maxHealth), barHeight);
+                ctx.fillRect(screenX - bw/2, screenY - size - 8, bw * (z.health / z.maxHealth), 5);
             }
         }
 
-        function drawGoldDrop(g) {
-            const depth = g.z;
-            const scale = 200 / depth;
-            const screenX = centerX + (g.x - centerX) * scale;
-            const screenY = horizon + (canvas.height - horizon) * (1 - depth / 200) * 1.5;
-            const size = 15 * scale;
+        // ============================================
+        // CRATE DRAWING
+        // ============================================
+        function drawCrate(c) {
+            const scale = 180 / c.depth;
+            const screenX = centerX + c.x * scale * 3;
+            const screenY = horizon + (H - horizon) * (1 - c.depth / 180) * 1.4;
+            const size = 25 * scale;
 
-            if (size < 3) return;
+            if (size < 5) return;
 
-            g.screenX = screenX;
-            g.screenY = screenY;
-            g.screenSize = size;
-
-            // Floating animation
-            const floatY = Math.sin(frameCount * 0.1 + g.x) * 3;
-
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc(screenX, screenY - size + floatY, size, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#ffec8b';
-            ctx.beginPath();
-            ctx.arc(screenX - size * 0.3, screenY - size * 1.3 + floatY, size * 0.4, 0, Math.PI * 2);
-            ctx.fill();
+            c.screenX = screenX;
+            c.screenY = screenY;
+            c.screenSize = size;
 
             // Glow
+            ctx.fillStyle = c.type === 'gold' ? 'rgba(255,215,0,0.3)' : c.type === 'health' ? 'rgba(0,255,0,0.3)' : 'rgba(100,150,255,0.3)';
             ctx.beginPath();
-            const glow = ctx.createRadialGradient(screenX, screenY - size + floatY, 0, screenX, screenY - size + floatY, size * 2);
-            glow.addColorStop(0, 'rgba(255, 215, 0, 0.3)');
-            glow.addColorStop(1, 'rgba(255, 215, 0, 0)');
-            ctx.fillStyle = glow;
-            ctx.arc(screenX, screenY - size + floatY, size * 2, 0, Math.PI * 2);
+            ctx.arc(screenX, screenY - size/2, size * 1.5, 0, Math.PI * 2);
             ctx.fill();
+
+            // Crate box
+            ctx.fillStyle = c.type === 'gold' ? '#ffd700' : c.type === 'health' ? '#4CAF50' : '#2196F3';
+            ctx.fillRect(screenX - size/2, screenY - size, size, size);
+
+            // Highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(screenX - size/2, screenY - size, size * 0.3, size);
+
+            // Icon
+            ctx.fillStyle = '#fff';
+            ctx.font = `${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(c.type === 'gold' ? '$' : c.type === 'health' ? '+' : '•', screenX, screenY - size * 0.35);
         }
 
-        function drawBloodSplats() {
-            bloodSplats.forEach(splat => {
-                ctx.globalAlpha = splat.alpha;
+        // ============================================
+        // EFFECTS
+        // ============================================
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawBlood() {
+            bloodSplats.forEach(b => {
+                ctx.globalAlpha = b.alpha;
                 ctx.fillStyle = '#8b0000';
                 ctx.beginPath();
-                ctx.arc(splat.x, splat.y, splat.size, 0, Math.PI * 2);
+                ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
                 ctx.fill();
             });
             ctx.globalAlpha = 1;
         }
 
         function drawHitMarkers() {
-            hitMarkers.forEach(marker => {
-                ctx.globalAlpha = marker.alpha;
+            hitMarkers.forEach(h => {
+                ctx.globalAlpha = h.alpha;
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 2;
-                const size = 10;
+                const s = 8;
                 ctx.beginPath();
-                ctx.moveTo(marker.x - size, marker.y - size);
-                ctx.lineTo(marker.x - size/2, marker.y - size/2);
-                ctx.moveTo(marker.x + size, marker.y - size);
-                ctx.lineTo(marker.x + size/2, marker.y - size/2);
-                ctx.moveTo(marker.x - size, marker.y + size);
-                ctx.lineTo(marker.x - size/2, marker.y + size/2);
-                ctx.moveTo(marker.x + size, marker.y + size);
-                ctx.lineTo(marker.x + size/2, marker.y + size/2);
+                ctx.moveTo(h.x - s, h.y - s); ctx.lineTo(h.x - s/2, h.y - s/2);
+                ctx.moveTo(h.x + s, h.y - s); ctx.lineTo(h.x + s/2, h.y - s/2);
+                ctx.moveTo(h.x - s, h.y + s); ctx.lineTo(h.x - s/2, h.y + s/2);
+                ctx.moveTo(h.x + s, h.y + s); ctx.lineTo(h.x + s/2, h.y + s/2);
                 ctx.stroke();
             });
             ctx.globalAlpha = 1;
         }
 
         function drawGun() {
-            const gun = GUNS[player.currentGun];
-            const recoil = player.gunRecoil;
+            const gun = GUNS[player.gun];
+            const recoil = player.recoil;
 
             ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height);
-            ctx.translate(0, recoil * 10);
+            ctx.translate(W/2, H + recoil * 15);
 
-            // Gun base position
-            const gunWidth = 200;
-            const gunHeight = 120;
+            // Gun body
+            ctx.fillStyle = '#2d2d2d';
 
-            // Different gun shapes
-            ctx.fillStyle = gun.color;
-
-            if (player.currentGun === 'pistol') {
-                // Pistol
-                ctx.fillRect(-30, -100 - recoil * 5, 60, 40);
-                ctx.fillRect(-20, -60, 40, 60);
-                ctx.fillStyle = '#222';
-                ctx.fillRect(-25, -95, 50, 8);
-            } else if (player.currentGun === 'shotgun') {
-                // Shotgun
-                ctx.fillRect(-40, -120 - recoil * 8, 80, 35);
-                ctx.fillRect(-30, -85, 60, 85);
-                ctx.fillStyle = '#3d2817';
-                ctx.fillRect(-25, -50, 50, 50);
-                ctx.fillStyle = '#222';
-                ctx.fillRect(-35, -115, 70, 10);
-            } else if (player.currentGun === 'smg') {
-                // SMG
-                ctx.fillRect(-35, -110 - recoil * 3, 70, 30);
+            if (player.gun === 'pistol') {
+                ctx.fillRect(-25, -90, 50, 35);
+                ctx.fillRect(-18, -55, 36, 55);
+            } else if (player.gun === 'shotgun') {
+                ctx.fillRect(-35, -110, 70, 30);
                 ctx.fillRect(-25, -80, 50, 80);
-                ctx.fillStyle = '#222';
-                ctx.fillRect(-30, -105, 60, 8);
-                // Magazine
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(-20, -45, 40, 45);
+            } else if (player.gun === 'smg') {
+                ctx.fillRect(-30, -100, 60, 25);
+                ctx.fillRect(-22, -75, 44, 75);
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-10, -60, 20, 40);
-            } else if (player.currentGun === 'rifle') {
-                // Assault Rifle
-                ctx.fillRect(-45, -130 - recoil * 5, 90, 35);
-                ctx.fillRect(-30, -95, 60, 95);
-                ctx.fillStyle = '#222';
-                ctx.fillRect(-40, -125, 80, 10);
-                // Stock
-                ctx.fillStyle = '#2d2d2d';
-                ctx.fillRect(20, -80, 40, 25);
-                // Magazine
+                ctx.fillRect(-8, -55, 16, 35);
+            } else if (player.gun === 'rifle') {
+                ctx.fillRect(-40, -120, 80, 30);
+                ctx.fillRect(-28, -90, 56, 90);
                 ctx.fillStyle = '#1a1a1a';
-                ctx.fillRect(-15, -70, 25, 45);
-            } else if (player.currentGun === 'sniper') {
-                // Sniper
-                ctx.fillRect(-40, -150 - recoil * 10, 80, 30);
-                ctx.fillRect(-25, -120, 50, 120);
-                // Scope
+                ctx.fillRect(-12, -65, 20, 40);
+                ctx.fillRect(20, -75, 35, 20);
+            } else if (player.gun === 'sniper') {
+                ctx.fillRect(-35, -140, 70, 25);
+                ctx.fillRect(-22, -115, 44, 115);
                 ctx.fillStyle = '#111';
-                ctx.fillRect(-15, -145, 30, 20);
+                ctx.fillRect(-12, -135, 24, 18);
                 ctx.fillStyle = '#3498db';
                 ctx.beginPath();
-                ctx.arc(0, -135, 8, 0, Math.PI * 2);
+                ctx.arc(0, -126, 7, 0, Math.PI * 2);
                 ctx.fill();
-            } else if (player.currentGun === 'minigun') {
-                // Minigun
-                ctx.fillRect(-50, -140 - recoil * 2, 100, 50);
-                ctx.fillRect(-35, -90, 70, 90);
-                // Barrels
-                ctx.fillStyle = '#555';
-                const rotation = frameCount * 0.5;
+            } else if (player.gun === 'minigun') {
+                ctx.fillRect(-45, -130, 90, 45);
+                ctx.fillRect(-32, -85, 64, 85);
+                ctx.fillStyle = '#444';
+                const rot = frame * 0.4;
                 for (let i = 0; i < 6; i++) {
-                    const angle = rotation + (i * Math.PI / 3);
-                    const bx = Math.cos(angle) * 15;
-                    const by = Math.sin(angle) * 15 - 130;
-                    ctx.fillRect(-5 + bx, by - recoil * 2, 10, 25);
+                    const a = rot + i * Math.PI / 3;
+                    const bx = Math.cos(a) * 12;
+                    const by = Math.sin(a) * 12;
+                    ctx.fillRect(-4 + bx, -120 + by, 8, 20);
                 }
             }
 
             // Muzzle flash
             if (muzzleFlash > 0) {
-                ctx.fillStyle = `rgba(255, 200, 50, ${muzzleFlash})`;
+                ctx.fillStyle = `rgba(255,200,50,${muzzleFlash})`;
                 ctx.beginPath();
-                ctx.arc(0, -130 - recoil * 5, 30 + muzzleFlash * 20, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = `rgba(255, 255, 200, ${muzzleFlash})`;
-                ctx.beginPath();
-                ctx.arc(0, -130 - recoil * 5, 15 + muzzleFlash * 10, 0, Math.PI * 2);
+                ctx.arc(0, -120, 25 + muzzleFlash * 15, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -881,37 +749,24 @@
 
             // Hands
             ctx.fillStyle = '#d4a373';
-            ctx.fillRect(canvas.width/2 - 80, canvas.height - 80, 30, 50);
-            ctx.fillRect(canvas.width/2 + 50, canvas.height - 80, 30, 50);
+            ctx.fillRect(W/2 - 70, H - 70, 25, 45);
+            ctx.fillRect(W/2 + 45, H - 70, 25, 45);
         }
 
         function drawCrosshair() {
-            const gun = GUNS[player.currentGun];
-            const spread = gun.spread * 200;
+            const spread = GUNS[player.gun].spread * 150;
+            const gap = 6 + spread;
+            const len = 12;
 
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
-
-            // Crosshair lines
-            const size = 15;
-            const gap = 5 + spread;
-
             ctx.beginPath();
-            // Top
-            ctx.moveTo(mouseX, mouseY - gap - size);
-            ctx.lineTo(mouseX, mouseY - gap);
-            // Bottom
-            ctx.moveTo(mouseX, mouseY + gap);
-            ctx.lineTo(mouseX, mouseY + gap + size);
-            // Left
-            ctx.moveTo(mouseX - gap - size, mouseY);
-            ctx.lineTo(mouseX - gap, mouseY);
-            // Right
-            ctx.moveTo(mouseX + gap, mouseY);
-            ctx.lineTo(mouseX + gap + size, mouseY);
+            ctx.moveTo(mouseX, mouseY - gap - len); ctx.lineTo(mouseX, mouseY - gap);
+            ctx.moveTo(mouseX, mouseY + gap); ctx.lineTo(mouseX, mouseY + gap + len);
+            ctx.moveTo(mouseX - gap - len, mouseY); ctx.lineTo(mouseX - gap, mouseY);
+            ctx.moveTo(mouseX + gap, mouseY); ctx.lineTo(mouseX + gap + len, mouseY);
             ctx.stroke();
 
-            // Center dot
             ctx.fillStyle = '#f00';
             ctx.beginPath();
             ctx.arc(mouseX, mouseY, 2, 0, Math.PI * 2);
@@ -919,258 +774,307 @@
         }
 
         function drawHUD() {
-            // Distance progress bar at top
-            const progress = distance / 5000;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(10, 10, canvas.width - 20, 20);
+            // Progress bar
+            const prog = distance / 5000;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(10, 10, W - 20, 18);
             ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(10, 10, (canvas.width - 20) * progress, 20);
+            ctx.fillRect(10, 10, (W - 20) * prog, 18);
 
-            // Checkpoint markers
+            // Checkpoints
             ctx.fillStyle = '#ffd700';
             for (let i = 1000; i <= 5000; i += 1000) {
-                const markerX = 10 + (canvas.width - 20) * (i / 5000);
-                ctx.fillRect(markerX - 2, 5, 4, 30);
+                const x = 10 + (W - 20) * (i / 5000);
+                ctx.fillRect(x - 2, 6, 4, 26);
             }
 
-            // Health bar (bottom left)
-            const healthWidth = 200;
-            const healthHeight = 20;
-            const healthX = 20;
-            const healthY = canvas.height - 40;
+            // Environment label
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Courier New';
+            ctx.textAlign = 'left';
+            const env = getEnvironment();
+            ctx.fillText(env.toUpperCase(), 15, 23);
 
+            // Health bar
             ctx.fillStyle = '#333';
-            ctx.fillRect(healthX, healthY, healthWidth, healthHeight);
-
-            const healthPercent = player.health / player.maxHealth;
-            ctx.fillStyle = healthPercent > 0.5 ? '#4CAF50' : healthPercent > 0.25 ? '#ff9800' : '#f44336';
-            ctx.fillRect(healthX, healthY, healthWidth * healthPercent, healthHeight);
-
+            ctx.fillRect(15, H - 35, 180, 18);
+            const hp = player.health / player.maxHealth;
+            ctx.fillStyle = hp > 0.5 ? '#4CAF50' : hp > 0.25 ? '#ff9800' : '#f44336';
+            ctx.fillRect(15, H - 35, 180 * hp, 18);
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
-            ctx.strokeRect(healthX, healthY, healthWidth, healthHeight);
-
+            ctx.strokeRect(15, H - 35, 180, 18);
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 14px Courier New';
-            ctx.textAlign = 'left';
-            ctx.fillText(`HP: ${player.health}/${player.maxHealth}`, healthX + 5, healthY + 15);
+            ctx.font = 'bold 12px Courier New';
+            ctx.fillText(`${player.health}/${player.maxHealth}`, 20, H - 21);
 
-            // Ammo (bottom right)
+            // Ammo
             ctx.textAlign = 'right';
-            ctx.font = 'bold 24px Courier New';
-            const ammoText = player.ammo === Infinity ? '∞' : player.ammo;
-            ctx.fillText(ammoText, canvas.width - 20, canvas.height - 25);
-            ctx.font = '14px Courier New';
-            ctx.fillText(GUNS[player.currentGun].name, canvas.width - 20, canvas.height - 45);
+            ctx.font = 'bold 20px Courier New';
+            ctx.fillText(player.ammo === Infinity ? '∞' : player.ammo, W - 15, H - 20);
+            ctx.font = '12px Courier New';
+            ctx.fillText(GUNS[player.gun].name, W - 15, H - 38);
 
             // Damage flash
             if (damageFlash > 0) {
-                ctx.fillStyle = `rgba(255, 0, 0, ${damageFlash * 0.3})`;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = `rgba(255,0,0,${damageFlash * 0.4})`;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // Direction indicator
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Courier New';
+            ctx.textAlign = 'center';
+            if (keys['a'] || keys['A'] || keys['ArrowLeft']) {
+                ctx.fillText('◄', 50, H/2);
+            }
+            if (keys['d'] || keys['D'] || keys['ArrowRight']) {
+                ctx.fillText('►', W - 50, H/2);
             }
         }
 
         // ============================================
-        // UPDATE FUNCTIONS
+        // UPDATE
         // ============================================
         function shoot() {
-            const gun = GUNS[player.currentGun];
+            const gun = GUNS[player.gun];
             const now = Date.now();
 
             if (now - player.lastShot < gun.fireRate) return;
-
-            if (player.ammo <= 0) {
-                playSound('empty');
-                return;
-            }
+            if (player.ammo <= 0) { playSound('empty'); return; }
 
             player.lastShot = now;
             if (player.ammo !== Infinity) {
                 player.ammo--;
-                ammoDisplay.textContent = player.ammo;
+                ammoEl.textContent = player.ammo;
             }
 
             playSound(gun.sound);
             muzzleFlash = 1;
-            player.gunRecoil = 1;
+            player.recoil = 1;
+            screenShake = 3;
 
-            // Check hits on zombies
             for (let b = 0; b < gun.bullets; b++) {
-                const spreadX = (Math.random() - 0.5) * gun.spread * 400;
-                const spreadY = (Math.random() - 0.5) * gun.spread * 400;
+                const spreadX = (Math.random() - 0.5) * gun.spread * 350;
+                const spreadY = (Math.random() - 0.5) * gun.spread * 350;
                 const hitX = mouseX + spreadX;
                 const hitY = mouseY + spreadY;
 
-                // Sort zombies by depth (front to back)
-                const sortedZombies = [...zombies].sort((a, b) => a.z - b.z);
+                const sorted = [...zombies].sort((a, b) => a.depth - b.depth);
 
-                for (const zombie of sortedZombies) {
-                    if (zombie.screenSize && zombie.screenX && zombie.screenY) {
-                        const dx = hitX - zombie.screenX;
-                        const dy = hitY - (zombie.screenY - zombie.screenSize * 0.5);
-                        const hitRadius = zombie.screenSize * 0.5;
+                for (const z of sorted) {
+                    if (!z.screenSize) continue;
+                    const dx = hitX - z.screenX;
+                    const dy = hitY - (z.screenY - z.screenSize * 0.5);
+                    const r = z.screenSize * 0.45;
 
-                        if (Math.abs(dx) < hitRadius && Math.abs(dy) < hitRadius) {
-                            zombie.health -= gun.damage;
-                            playSound('zombieHit');
+                    if (Math.abs(dx) < r && Math.abs(dy) < r) {
+                        z.health -= gun.damage;
+                        playSound('zombieHit');
 
-                            // Hit marker
-                            hitMarkers.push({
-                                x: zombie.screenX,
-                                y: zombie.screenY - zombie.screenSize * 0.5,
+                        hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.5, alpha: 1 });
+
+                        for (let i = 0; i < 3; i++) {
+                            bloodSplats.push({
+                                x: z.screenX + (Math.random() - 0.5) * 25,
+                                y: z.screenY - z.screenSize * 0.5 + (Math.random() - 0.5) * 25,
+                                size: 3 + Math.random() * 4,
                                 alpha: 1
                             });
-
-                            // Blood splat
-                            for (let i = 0; i < 3; i++) {
-                                bloodSplats.push({
-                                    x: zombie.screenX + (Math.random() - 0.5) * 30,
-                                    y: zombie.screenY - zombie.screenSize * 0.5 + (Math.random() - 0.5) * 30,
-                                    size: 3 + Math.random() * 5,
-                                    alpha: 1
-                                });
-                            }
-
-                            if (zombie.health <= 0) {
-                                playSound('zombieDie');
-                                zombiesKilled++;
-
-                                // Drop gold
-                                const goldAmount = 5 + Math.floor(Math.random() * 10);
-                                goldDrops.push({
-                                    x: zombie.x,
-                                    z: zombie.z,
-                                    value: goldAmount
-                                });
-                            }
-
-                            break; // Only hit one zombie per bullet
                         }
+
+                        if (z.health <= 0) {
+                            playSound('zombieDie');
+                            kills++;
+
+                            // Drop gold
+                            crates.push({
+                                x: z.x,
+                                depth: z.depth,
+                                type: 'gold',
+                                value: 5 + Math.floor(Math.random() * 10)
+                            });
+                        }
+                        break;
                     }
+                }
+            }
+        }
+
+        function spawnZombie() {
+            const rate = Math.max(15, 60 - distance / 80);
+            if (Math.random() > 1 / rate) return;
+
+            const side = Math.random();
+            let x, depth;
+
+            if (side < 0.3) {
+                // From left
+                x = -80 - Math.random() * 40;
+                depth = 50 + Math.random() * 100;
+            } else if (side < 0.6) {
+                // From right
+                x = 80 + Math.random() * 40;
+                depth = 50 + Math.random() * 100;
+            } else {
+                // From front
+                x = (Math.random() - 0.5) * 150;
+                depth = 150 + Math.random() * 30;
+            }
+
+            const type = Math.random();
+            let hp = 40 + distance / 50;
+            let speed = 0.6 + Math.random() * 0.3;
+            let zombieType = 'normal';
+
+            if (type > 0.92 && distance > 1500) {
+                hp *= 3;
+                speed *= 0.6;
+                zombieType = 'tank';
+            } else if (type > 0.75 && distance > 800) {
+                hp *= 0.5;
+                speed *= 1.8;
+                zombieType = 'fast';
+            }
+
+            zombies.push({
+                id: Math.random(),
+                x: x,
+                depth: depth,
+                speed: speed,
+                health: hp,
+                maxHealth: hp,
+                type: zombieType,
+                attackCD: 0
+            });
+        }
+
+        function spawnCrate() {
+            if (Math.random() > 0.008) return;
+
+            const type = Math.random();
+            crates.push({
+                x: (Math.random() - 0.5) * 120,
+                depth: 160 + Math.random() * 20,
+                type: type < 0.5 ? 'gold' : type < 0.8 ? 'ammo' : 'health',
+                value: type < 0.5 ? 10 + Math.floor(Math.random() * 15) : 1
+            });
+        }
+
+        function updatePlayer() {
+            // Left/right movement
+            const moveSpeed = 2;
+            if (keys['a'] || keys['A'] || keys['ArrowLeft']) {
+                player.x = Math.max(-60, player.x - moveSpeed);
+            }
+            if (keys['d'] || keys['D'] || keys['ArrowRight']) {
+                player.x = Math.min(60, player.x + moveSpeed);
+            }
+
+            // Running forward
+            if (keys['w'] || keys['W'] || keys['ArrowUp']) {
+                distance += 2;
+                distanceEl.textContent = distance;
+
+                if (distance >= nextCheckpoint && distance < 5000) {
+                    openShop();
+                }
+                if (distance >= 5000) {
+                    victory();
                 }
             }
         }
 
         function updateZombies() {
-            // Spawn zombies
-            const spawnRate = Math.max(20, 80 - Math.floor(distance / 100));
-            const zombieHealth = 50 + Math.floor(distance / 500) * 25;
+            zombies.forEach(z => {
+                // Move toward player
+                z.depth -= z.speed;
 
-            if (Math.random() < 1 / spawnRate) {
-                const type = Math.random();
-                let health = zombieHealth;
-                let speed = 0.8 + Math.random() * 0.4;
-
-                if (type > 0.9 && distance > 1500) {
-                    health = zombieHealth * 3;
-                    speed = 0.5;
-                } else if (type > 0.7 && distance > 1000) {
-                    health = zombieHealth * 0.5;
-                    speed = 1.5 + Math.random() * 0.5;
-                }
-
-                zombies.push({
-                    x: centerX + (Math.random() - 0.5) * 200,
-                    z: 200, // Start far away
-                    speed: speed,
-                    health: health,
-                    maxHealth: health,
-                    attackCooldown: 0
-                });
-            }
-
-            // Update zombies
-            zombies.forEach(zombie => {
-                zombie.z -= zombie.speed; // Move toward player
-
-                // Wobble side to side
-                zombie.x += Math.sin(frameCount * 0.05 + zombie.z) * 0.5;
+                // Also move horizontally toward player
+                const targetX = player.x;
+                z.x += (targetX - z.x) * 0.02;
 
                 // Attack when close
-                if (zombie.z < 15) {
-                    if (zombie.attackCooldown <= 0) {
-                        const damage = player.hasArmor ? 8 : 12;
-                        player.health -= damage;
-                        healthDisplay.textContent = Math.max(0, player.health);
-                        zombie.attackCooldown = 60;
+                if (z.depth < 20) {
+                    if (z.attackCD <= 0) {
+                        const dmg = player.armor ? 8 : 12;
+                        player.health -= dmg;
+                        healthEl.textContent = Math.max(0, player.health);
+                        z.attackCD = 50;
                         damageFlash = 1;
+                        screenShake = 5;
                         playSound('playerHit');
 
-                        if (player.health <= 0) {
-                            gameOver();
-                        }
+                        if (player.health <= 0) gameOver();
                     }
-                    zombie.attackCooldown--;
+                    z.attackCD--;
                 }
             });
 
-            // Remove dead zombies and ones that got past
-            zombies = zombies.filter(z => z.health > 0 && z.z > 5);
+            zombies = zombies.filter(z => z.health > 0 && z.depth > 10);
         }
 
-        function updateGold() {
-            goldDrops.forEach(g => {
-                g.z -= 2; // Move toward player faster
+        function updateCrates() {
+            crates.forEach(c => {
+                c.depth -= 1.5;
 
-                // Collect when close
-                if (g.z < 20 && g.screenSize > 10) {
-                    gold += g.value;
-                    totalGoldCollected += g.value;
-                    goldDisplay.textContent = gold;
-                    g.value = 0;
-                    playSound('goldPickup');
+                // Collect if close and player is near horizontally
+                if (c.depth < 25 && Math.abs(c.x - player.x) < 30) {
+                    if (c.type === 'gold') {
+                        gold += c.value;
+                        totalGold += c.value;
+                        goldEl.textContent = gold;
+                    } else if (c.type === 'health') {
+                        player.health = Math.min(player.maxHealth, player.health + 25);
+                        healthEl.textContent = player.health;
+                    } else if (c.type === 'ammo') {
+                        if (player.ammo !== Infinity) {
+                            player.ammo = Math.min(GUNS[player.gun].ammoMax, player.ammo + 30);
+                            ammoEl.textContent = player.ammo;
+                        }
+                    }
+                    playSound('crate');
+                    c.value = 0;
                 }
             });
 
-            goldDrops = goldDrops.filter(g => g.value > 0 && g.z > 5);
+            crates = crates.filter(c => c.value > 0 && c.depth > 5);
         }
 
         function updateEffects() {
-            // Muzzle flash
-            if (muzzleFlash > 0) muzzleFlash -= 0.2;
+            if (muzzleFlash > 0) muzzleFlash -= 0.25;
+            if (player.recoil > 0) player.recoil -= 0.12;
+            if (damageFlash > 0) damageFlash -= 0.04;
+            if (screenShake > 0) screenShake -= 0.5;
 
-            // Gun recoil
-            if (player.gunRecoil > 0) player.gunRecoil -= 0.15;
+            hitMarkers.forEach(h => h.alpha -= 0.06);
+            hitMarkers = hitMarkers.filter(h => h.alpha > 0);
 
-            // Damage flash
-            if (damageFlash > 0) damageFlash -= 0.05;
+            bloodSplats.forEach(b => b.alpha -= 0.025);
+            bloodSplats = bloodSplats.filter(b => b.alpha > 0);
 
-            // Hit markers
-            hitMarkers.forEach(m => m.alpha -= 0.05);
-            hitMarkers = hitMarkers.filter(m => m.alpha > 0);
-
-            // Blood splats
-            bloodSplats.forEach(s => s.alpha -= 0.02);
-            bloodSplats = bloodSplats.filter(s => s.alpha > 0);
-        }
-
-        function updateDistance() {
-            distance += 1;
-            distanceDisplay.textContent = distance;
-
-            if (distance >= nextCheckpoint && distance < 5000) {
-                openShop();
-            }
-
-            if (distance >= 5000) {
-                victory();
-            }
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3;
+                p.life -= 0.03;
+            });
+            particles = particles.filter(p => p.life > 0);
         }
 
         // ============================================
-        // SHOP SYSTEM
+        // SHOP
         // ============================================
         function openShop() {
             gamePaused = true;
             nextCheckpoint += 1000;
             playSound('checkpoint');
-
             document.getElementById('shopGold').textContent = gold;
-            renderShopItems();
-            shopScreen.classList.remove('hidden');
+            renderShop();
+            document.getElementById('shopScreen').classList.remove('hidden');
         }
 
-        function renderShopItems() {
+        function renderShop() {
             const container = document.getElementById('shopItems');
             container.innerHTML = '';
 
@@ -1178,46 +1082,36 @@
                 const div = document.createElement('div');
                 div.className = 'shop-item';
 
-                let owned = false;
-                let equipped = false;
-                let buttonText = 'BUY';
-                let buttonClass = 'buy';
+                let owned = false, equipped = false;
+                let btnText = 'BUY', btnClass = 'buy';
 
                 if (item.type === 'gun') {
                     owned = player.ownedGuns.includes(item.gunId);
-                    equipped = player.currentGun === item.gunId;
+                    equipped = player.gun === item.gunId;
                     if (owned) {
                         div.classList.add('owned');
-                        buttonText = equipped ? 'EQUIPPED' : 'EQUIP';
-                        buttonClass = equipped ? 'equipped' : 'equip';
+                        btnText = equipped ? 'EQUIPPED' : 'EQUIP';
+                        btnClass = equipped ? 'equipped' : 'equip';
                     }
-                } else if (item.type === 'upgrade') {
-                    if (item.effect === 'armor' && player.hasArmor) {
-                        owned = true;
-                        div.classList.add('owned');
-                        buttonText = 'OWNED';
-                        buttonClass = 'equipped';
-                    }
+                } else if (item.type === 'armor' && player.armor) {
+                    owned = true;
+                    div.classList.add('owned');
+                    btnText = 'OWNED';
+                    btnClass = 'equipped';
                 }
 
-                const canAfford = gold >= item.price;
+                const canBuy = gold >= item.price;
 
                 div.innerHTML = `
                     <div class="item-info">
                         <span class="item-name">${item.name}</span>
                         <span class="item-desc">${item.desc}</span>
                     </div>
-                    <span class="item-price">${owned ? '' : item.price + ' 🪙'}</span>
-                    <button class="item-btn ${buttonClass}"
-                            ${!canAfford && !owned ? 'disabled' : ''}
-                            data-id="${item.id}">
-                        ${buttonText}
-                    </button>
+                    <span class="item-price">${owned ? '' : item.price}</span>
+                    <button class="item-btn ${btnClass}" ${!canBuy && !owned ? 'disabled' : ''}>${btnText}</button>
                 `;
 
-                const btn = div.querySelector('button');
-                btn.addEventListener('click', () => buyItem(item));
-
+                div.querySelector('button').onclick = () => buyItem(item);
                 container.appendChild(div);
             });
         }
@@ -1225,54 +1119,40 @@
         function buyItem(item) {
             if (item.type === 'gun') {
                 if (player.ownedGuns.includes(item.gunId)) {
-                    player.currentGun = item.gunId;
+                    player.gun = item.gunId;
                     player.ammo = GUNS[item.gunId].ammoMax;
-                    gunNameDisplay.textContent = GUNS[item.gunId].name;
-                    ammoDisplay.textContent = player.ammo === Infinity ? '∞' : player.ammo;
-                    playSound('buy');
+                    gunEl.textContent = GUNS[item.gunId].name;
+                    ammoEl.textContent = player.ammo === Infinity ? '∞' : player.ammo;
                 } else if (gold >= item.price) {
                     gold -= item.price;
                     player.ownedGuns.push(item.gunId);
-                    player.currentGun = item.gunId;
+                    player.gun = item.gunId;
                     player.ammo = GUNS[item.gunId].ammoMax;
-                    gunNameDisplay.textContent = GUNS[item.gunId].name;
-                    ammoDisplay.textContent = player.ammo === Infinity ? '∞' : player.ammo;
+                    gunEl.textContent = GUNS[item.gunId].name;
+                    ammoEl.textContent = player.ammo === Infinity ? '∞' : player.ammo;
+                    goldEl.textContent = gold;
                     document.getElementById('shopGold').textContent = gold;
-                    goldDisplay.textContent = gold;
-                    playSound('buy');
                 }
-            } else if (item.type === 'consumable') {
-                if (gold >= item.price) {
-                    gold -= item.price;
-                    document.getElementById('shopGold').textContent = gold;
-                    goldDisplay.textContent = gold;
-
-                    if (item.heal) {
-                        player.health = Math.min(player.maxHealth, player.health + item.heal);
-                        healthDisplay.textContent = player.health;
-                        playSound('heal');
-                    } else if (item.effect === 'ammo') {
-                        player.ammo = GUNS[player.currentGun].ammoMax;
-                        ammoDisplay.textContent = player.ammo === Infinity ? '∞' : player.ammo;
-                        playSound('reload');
-                    }
-                }
-            } else if (item.type === 'upgrade') {
-                if (gold >= item.price && !player.hasArmor && item.effect === 'armor') {
-                    gold -= item.price;
-                    player.hasArmor = true;
-                    document.getElementById('shopGold').textContent = gold;
-                    goldDisplay.textContent = gold;
-                    playSound('buy');
-                }
+            } else if (item.type === 'heal' && gold >= item.price) {
+                gold -= item.price;
+                player.health = Math.min(player.maxHealth, player.health + item.value);
+                healthEl.textContent = player.health;
+                goldEl.textContent = gold;
+                document.getElementById('shopGold').textContent = gold;
+            } else if (item.type === 'armor' && gold >= item.price && !player.armor) {
+                gold -= item.price;
+                player.armor = true;
+                goldEl.textContent = gold;
+                document.getElementById('shopGold').textContent = gold;
+            } else if (item.type === 'ammo' && gold >= item.price && player.ammo !== Infinity) {
+                gold -= item.price;
+                player.ammo = GUNS[player.gun].ammoMax;
+                ammoEl.textContent = player.ammo;
+                goldEl.textContent = gold;
+                document.getElementById('shopGold').textContent = gold;
             }
-
-            renderShopItems();
-        }
-
-        function closeShop() {
-            shopScreen.classList.add('hidden');
-            gamePaused = false;
+            playSound('pickup');
+            renderShop();
         }
 
         // ============================================
@@ -1281,16 +1161,16 @@
         function victory() {
             gameRunning = false;
             document.getElementById('finalDistance').textContent = distance;
-            document.getElementById('zombiesKilled').textContent = zombiesKilled;
-            document.getElementById('totalGold').textContent = totalGoldCollected;
-            victoryScreen.classList.remove('hidden');
+            document.getElementById('zombiesKilled').textContent = kills;
+            document.getElementById('totalGold').textContent = totalGold;
+            document.getElementById('victoryScreen').classList.remove('hidden');
         }
 
         function gameOver() {
             gameRunning = false;
             document.getElementById('deathDistance').textContent = distance;
-            document.getElementById('deathKills').textContent = zombiesKilled;
-            gameOverScreen.classList.remove('hidden');
+            document.getElementById('deathKills').textContent = kills;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
         }
 
         function startGame() {
@@ -1298,43 +1178,45 @@
 
             distance = 0;
             gold = 0;
-            totalGoldCollected = 0;
-            zombiesKilled = 0;
+            totalGold = 0;
+            kills = 0;
             nextCheckpoint = 1000;
-            frameCount = 0;
+            frame = 0;
 
             player = {
+                x: 0,
                 health: 100,
                 maxHealth: 100,
-                currentGun: 'pistol',
+                gun: 'pistol',
                 ammo: Infinity,
                 lastShot: 0,
-                hasArmor: false,
+                armor: false,
                 ownedGuns: ['pistol'],
-                gunRecoil: 0
+                recoil: 0
             };
 
             zombies = [];
-            goldDrops = [];
-            hitMarkers = [];
+            crates = [];
+            particles = [];
             bloodSplats = [];
+            hitMarkers = [];
             muzzleFlash = 0;
             damageFlash = 0;
+            screenShake = 0;
 
-            distanceDisplay.textContent = 0;
-            goldDisplay.textContent = 0;
-            healthDisplay.textContent = 100;
-            gunNameDisplay.textContent = 'Pistol';
-            ammoDisplay.textContent = '∞';
+            distanceEl.textContent = 0;
+            goldEl.textContent = 0;
+            healthEl.textContent = 100;
+            gunEl.textContent = 'Pistol';
+            ammoEl.textContent = '∞';
 
-            startScreen.classList.add('hidden');
-            victoryScreen.classList.add('hidden');
-            gameOverScreen.classList.add('hidden');
-            shopScreen.classList.add('hidden');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('victoryScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('shopScreen').classList.add('hidden');
 
             gameRunning = true;
             gamePaused = false;
-
             gameLoop();
         }
 
@@ -1344,66 +1226,83 @@
         function gameLoop() {
             if (!gameRunning) return;
 
-            frameCount++;
+            frame++;
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawBackground();
-
-            if (!gamePaused) {
-                if (mouseDown) shoot();
-                updateZombies();
-                updateGold();
-                updateEffects();
-                updateDistance();
+            // Screen shake
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake * 2,
+                    (Math.random() - 0.5) * screenShake * 2
+                );
             }
 
-            // Sort and draw by depth (far to near)
-            const allObjects = [
-                ...zombies.map(z => ({ type: 'zombie', obj: z, z: z.z })),
-                ...goldDrops.map(g => ({ type: 'gold', obj: g, z: g.z }))
-            ].sort((a, b) => b.z - a.z);
+            ctx.clearRect(-10, -10, W + 20, H + 20);
 
-            allObjects.forEach(item => {
-                if (item.type === 'zombie') drawZombie(item.obj);
-                else if (item.type === 'gold') drawGoldDrop(item.obj);
+            drawSky();
+            drawGround();
+            drawFog();
+
+            if (!gamePaused) {
+                updatePlayer();
+                if (mouseDown) shoot();
+                spawnZombie();
+                spawnCrate();
+                updateZombies();
+                updateCrates();
+                updateEffects();
+            }
+
+            // Sort by depth and draw
+            const objects = [
+                ...zombies.map(z => ({ type: 'zombie', obj: z, depth: z.depth })),
+                ...crates.map(c => ({ type: 'crate', obj: c, depth: c.depth }))
+            ].sort((a, b) => b.depth - a.depth);
+
+            objects.forEach(o => {
+                if (o.type === 'zombie') drawZombie(o.obj);
+                else drawCrate(o.obj);
             });
 
-            drawBloodSplats();
+            drawBlood();
             drawHitMarkers();
+            drawParticles();
             drawGun();
             drawCrosshair();
             drawHUD();
 
-            if (gamePaused && shopScreen.classList.contains('hidden')) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            if (gamePaused && document.getElementById('shopScreen').classList.contains('hidden')) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, W, H);
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 40px Courier New';
+                ctx.font = 'bold 36px Courier New';
                 ctx.textAlign = 'center';
-                ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('PAUSED', W/2, H/2);
             }
 
             requestAnimationFrame(gameLoop);
         }
 
         // ============================================
-        // INPUT HANDLERS
+        // INPUT
         // ============================================
         document.addEventListener('keydown', e => {
+            keys[e.key] = true;
             if (e.key === 'p' || e.key === 'P') {
-                if (!shopScreen.classList.contains('hidden')) return;
-                gamePaused = !gamePaused;
-            }
-
-            if (e.key === 'r' || e.key === 'R') {
-                if (player.ammo !== Infinity) {
-                    player.ammo = GUNS[player.currentGun].ammoMax;
-                    ammoDisplay.textContent = player.ammo;
-                    playSound('reload');
+                if (document.getElementById('shopScreen').classList.contains('hidden')) {
+                    gamePaused = !gamePaused;
                 }
             }
+            if ((e.key === 'r' || e.key === 'R') && player.ammo !== Infinity) {
+                player.ammo = GUNS[player.gun].ammoMax;
+                ammoEl.textContent = player.ammo;
+                playSound('reload');
+            }
         });
+
+        document.addEventListener('keyup', e => { keys[e.key] = false; });
 
         canvas.addEventListener('mousemove', e => {
             const rect = canvas.getBoundingClientRect();
@@ -1411,34 +1310,28 @@
             mouseY = e.clientY - rect.top;
         });
 
-        canvas.addEventListener('mousedown', e => {
-            mouseDown = true;
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            mouseDown = false;
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            mouseDown = false;
-        });
-
-        // Prevent context menu
+        canvas.addEventListener('mousedown', () => { mouseDown = true; });
+        canvas.addEventListener('mouseup', () => { mouseDown = false; });
+        canvas.addEventListener('mouseleave', () => { mouseDown = false; });
         canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-        // Buttons
-        document.getElementById('startBtn').addEventListener('click', startGame);
-        document.getElementById('restartBtn').addEventListener('click', startGame);
-        document.getElementById('victoryBtn').addEventListener('click', startGame);
-        document.getElementById('continueBtn').addEventListener('click', closeShop);
+        document.getElementById('startBtn').onclick = startGame;
+        document.getElementById('restartBtn').onclick = startGame;
+        document.getElementById('victoryBtn').onclick = startGame;
+        document.getElementById('continueBtn').onclick = () => {
+            document.getElementById('shopScreen').classList.add('hidden');
+            gamePaused = false;
+        };
 
-        document.getElementById('soundBtn').addEventListener('click', () => {
+        document.getElementById('soundBtn').onclick = () => {
             soundEnabled = !soundEnabled;
             document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
-        });
+        };
 
-        // Draw initial screen
-        drawBackground();
+        // Initial draw
+        drawSky();
+        drawGround();
+        drawFog();
         drawGun();
     </script>
 </body>
