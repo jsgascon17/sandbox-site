@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crossy Road - Learning Sandbox</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #87CEEB;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            border: 4px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .overlay.hidden { display: none; }
+        .overlay h1 {
+            font-size: 3.5rem;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0 #2E7D32;
+        }
+        .overlay h2 {
+            font-size: 2rem;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        .overlay p {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .score-display {
+            font-size: 4rem;
+            color: #fff;
+            margin: 20px 0;
+        }
+        .high-score {
+            color: #FFD700;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+        .coins-display {
+            color: #FFD700;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #2E7D32;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #2E7D32;
+        }
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #2E7D32;
+        }
+        .btn-shop {
+            background: linear-gradient(to bottom, #9C27B0, #7B1FA2);
+            box-shadow: 0 4px 0 #4A148C;
+        }
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 70px);
+            gap: 10px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .character-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.1);
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        .character-btn:hover { border-color: #4CAF50; transform: scale(1.1); }
+        .character-btn.selected { border-color: #4CAF50; background: rgba(76,175,80,0.3); box-shadow: 0 0 15px rgba(76,175,80,0.5); }
+        .character-btn.locked { opacity: 0.4; cursor: not-allowed; }
+        .character-btn.locked::after { content: '🔒'; position: absolute; font-size: 1rem; }
+        .character-btn .price { font-size: 0.6rem; color: #FFD700; margin-top: 2px; }
+        .controls {
+            margin-top: 15px;
+            color: #333;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .controls span {
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 0 3px;
+            box-shadow: 0 2px 0 #ccc;
+        }
+        .back-link {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: #333;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { color: #000; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="700"></canvas>
+    <div class="controls">
+        <span>↑</span><span>↓</span><span>←</span><span>→</span> or <span>WASD</span> to move
+    </div>
+
+    <!-- Start Screen -->
+    <div class="overlay" id="startScreen">
+        <h1>CROSSY ROAD</h1>
+        <p>Hop across roads, rivers, and train tracks!</p>
+        <p>Don't get squished or fall in the water!</p>
+        <div style="font-size: 4rem; margin: 20px;">🐔</div>
+        <button class="btn" id="startBtn">PLAY</button>
+        <button class="btn btn-shop" id="shopBtn">CHARACTERS</button>
+        <p style="margin-top: 20px;">High Score: <span id="highScoreDisplay">0</span></p>
+        <p style="color: #FFD700;">Coins: <span id="totalCoinsDisplay">0</span></p>
+    </div>
+
+    <!-- Character Select -->
+    <div class="overlay hidden" id="shopScreen">
+        <h2 style="color: #9C27B0;">CHARACTERS</h2>
+        <p style="color: #FFD700;">Coins: <span id="shopCoins">0</span></p>
+        <div class="character-grid" id="characterGrid"></div>
+        <button class="btn" id="shopBackBtn">BACK</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div class="overlay hidden" id="gameOverScreen">
+        <h2>GAME OVER</h2>
+        <div class="score-display"><span id="finalScore">0</span></div>
+        <div class="high-score">HIGH SCORE: <span id="finalHighScore">0</span></div>
+        <div class="coins-display">+<span id="coinsEarned">0</span> coins</div>
+        <button class="btn" id="restartBtn">PLAY AGAIN</button>
+        <button class="btn btn-shop" id="menuBtn">MENU</button>
+    </div>
+
+    <a href="index.html" class="back-link">&larr; Back to Arcade</a>
+
+    <script>
+        // ============================================
+        // AUDIO
+        // ============================================
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            const sounds = {
+                hop: () => {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                },
+                coin: () => {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(988, now);
+                    osc.frequency.setValueAtTime(1319, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.12);
+                },
+                hit: () => {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                },
+                splash: () => {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                },
+                train: () => {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now); osc.stop(now + 0.5);
+                },
+                warning: () => {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.setValueAtTime(600, now + 0.1);
+                    osc.frequency.setValueAtTime(800, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                }
+            };
+            if (sounds[type]) sounds[type]();
+        }
+
+        // ============================================
+        // CANVAS
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        const TILE_SIZE = 50;
+        const COLS = Math.floor(W / TILE_SIZE);
+        const ROWS = Math.floor(H / TILE_SIZE) + 5;
+
+        // ============================================
+        // CHARACTERS
+        // ============================================
+        const CHARACTERS = [
+            { id: 'chicken', emoji: '🐔', name: 'Chicken', price: 0 },
+            { id: 'duck', emoji: '🦆', name: 'Duck', price: 0 },
+            { id: 'frog', emoji: '🐸', name: 'Frog', price: 50 },
+            { id: 'rabbit', emoji: '🐰', name: 'Rabbit', price: 50 },
+            { id: 'dog', emoji: '🐕', name: 'Dog', price: 100 },
+            { id: 'cat', emoji: '🐱', name: 'Cat', price: 100 },
+            { id: 'pig', emoji: '🐷', name: 'Pig', price: 100 },
+            { id: 'cow', emoji: '🐮', name: 'Cow', price: 150 },
+            { id: 'penguin', emoji: '🐧', name: 'Penguin', price: 150 },
+            { id: 'fox', emoji: '🦊', name: 'Fox', price: 200 },
+            { id: 'bear', emoji: '🐻', name: 'Bear', price: 200 },
+            { id: 'panda', emoji: '🐼', name: 'Panda', price: 250 },
+            { id: 'unicorn', emoji: '🦄', name: 'Unicorn', price: 300 },
+            { id: 'dragon', emoji: '🐉', name: 'Dragon', price: 500 },
+            { id: 'alien', emoji: '👽', name: 'Alien', price: 500 },
+        ];
+
+        // ============================================
+        // GAME STATE
+        // ============================================
+        let gameRunning = false;
+        let score = 0;
+        let maxScore = 0;
+        let highScore = parseInt(localStorage.getItem('crossyHighScore')) || 0;
+        let totalCoins = parseInt(localStorage.getItem('crossyCoins')) || 0;
+        let coinsThisRun = 0;
+        let unlockedCharacters = JSON.parse(localStorage.getItem('crossyCharacters')) || ['chicken', 'duck'];
+        let selectedCharacter = localStorage.getItem('crossySelected') || 'chicken';
+
+        // Player
+        let player = null;
+
+        // World
+        let rows = [];
+        let cameraY = 0;
+        let frameCount = 0;
+
+        // Update displays
+        document.getElementById('highScoreDisplay').textContent = highScore;
+        document.getElementById('totalCoinsDisplay').textContent = totalCoins;
+
+        // ============================================
+        // ROW GENERATION
+        // ============================================
+        function generateRow(y) {
+            const types = ['grass', 'grass', 'road', 'road', 'road', 'river', 'river', 'train'];
+            const type = y === 0 ? 'grass' : types[Math.floor(Math.random() * types.length)];
+
+            const row = {
+                y: y,
+                type: type,
+                objects: [],
+                coin: null
+            };
+
+            switch (type) {
+                case 'grass':
+                    // Trees as obstacles
+                    const treeCount = Math.floor(Math.random() * 4);
+                    for (let i = 0; i < treeCount; i++) {
+                        const x = Math.floor(Math.random() * COLS);
+                        if (!row.objects.find(o => o.x === x)) {
+                            row.objects.push({ type: 'tree', x: x });
+                        }
+                    }
+                    break;
+
+                case 'road':
+                    // Cars
+                    const carCount = 1 + Math.floor(Math.random() * 3);
+                    const speed = (1 + Math.random() * 2) * (Math.random() < 0.5 ? 1 : -1);
+                    const carType = Math.random() < 0.3 ? 'truck' : 'car';
+
+                    for (let i = 0; i < carCount; i++) {
+                        row.objects.push({
+                            type: carType,
+                            x: Math.random() * W,
+                            speed: speed,
+                            width: carType === 'truck' ? 80 : 50
+                        });
+                    }
+                    row.speed = speed;
+                    break;
+
+                case 'river':
+                    // Logs
+                    const logCount = 2 + Math.floor(Math.random() * 2);
+                    const logSpeed = (0.8 + Math.random() * 1.5) * (Math.random() < 0.5 ? 1 : -1);
+                    const logType = Math.random() < 0.3 ? 'lilypad' : 'log';
+
+                    for (let i = 0; i < logCount; i++) {
+                        row.objects.push({
+                            type: logType,
+                            x: (i * W / logCount) + Math.random() * 50,
+                            speed: logSpeed,
+                            width: logType === 'lilypad' ? 50 : 80 + Math.random() * 40
+                        });
+                    }
+                    row.speed = logSpeed;
+                    break;
+
+                case 'train':
+                    row.trainWarning = 0;
+                    row.trainActive = false;
+                    row.trainX = -500;
+                    row.trainSpeed = 15;
+                    row.trainDirection = Math.random() < 0.5 ? 1 : -1;
+                    break;
+            }
+
+            // Random coin
+            if (Math.random() < 0.15 && y > 0) {
+                const coinX = Math.floor(Math.random() * COLS);
+                // Make sure coin isn't on a tree
+                if (!row.objects.find(o => o.type === 'tree' && o.x === coinX)) {
+                    row.coin = { x: coinX, collected: false };
+                }
+            }
+
+            return row;
+        }
+
+        function initWorld() {
+            rows = [];
+            for (let y = -5; y < ROWS + 10; y++) {
+                rows.push(generateRow(y));
+            }
+        }
+
+        // ============================================
+        // PLAYER
+        // ============================================
+        function createPlayer() {
+            return {
+                x: Math.floor(COLS / 2),
+                y: 0,
+                targetX: Math.floor(COLS / 2),
+                targetY: 0,
+                pixelX: Math.floor(COLS / 2) * TILE_SIZE + TILE_SIZE / 2,
+                pixelY: H - TILE_SIZE * 2,
+                moving: false,
+                moveProgress: 0,
+                dead: false,
+                onLog: null
+            };
+        }
+
+        function movePlayer(dx, dy) {
+            if (player.moving || player.dead) return;
+
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+
+            // Bounds check
+            if (newX < 0 || newX >= COLS) return;
+
+            // Check for tree collision
+            const targetRow = rows.find(r => r.y === newY);
+            if (targetRow) {
+                const tree = targetRow.objects.find(o => o.type === 'tree' && o.x === newX);
+                if (tree) return;
+            }
+
+            // Valid move
+            player.targetX = newX;
+            player.targetY = newY;
+            player.moving = true;
+            player.moveProgress = 0;
+
+            playSound('hop');
+
+            // Update score
+            if (newY > maxScore) {
+                maxScore = newY;
+                score = maxScore;
+            }
+        }
+
+        function updatePlayer() {
+            if (player.dead) return;
+
+            if (player.moving) {
+                player.moveProgress += 0.2;
+
+                if (player.moveProgress >= 1) {
+                    player.x = player.targetX;
+                    player.y = player.targetY;
+                    player.moving = false;
+                    player.moveProgress = 0;
+
+                    // Check for coin
+                    const row = rows.find(r => r.y === player.y);
+                    if (row && row.coin && !row.coin.collected && row.coin.x === player.x) {
+                        row.coin.collected = true;
+                        coinsThisRun++;
+                        playSound('coin');
+                    }
+                }
+
+                // Interpolate position
+                const startX = player.x * TILE_SIZE + TILE_SIZE / 2;
+                const startY = H - TILE_SIZE * 2 - (player.y - player.targetY + (player.targetY - player.y) * (1 - player.moveProgress)) * TILE_SIZE;
+                const endX = player.targetX * TILE_SIZE + TILE_SIZE / 2;
+                const endY = H - TILE_SIZE * 2 - (player.targetY * TILE_SIZE) + cameraY;
+
+                // Hop arc
+                const hopHeight = Math.sin(player.moveProgress * Math.PI) * 15;
+
+                player.pixelX = startX + (endX - startX) * player.moveProgress;
+                player.pixelY = H - TILE_SIZE * 2 - ((player.y + (player.targetY - player.y) * player.moveProgress) * TILE_SIZE) + cameraY - hopHeight;
+            } else {
+                player.pixelX = player.x * TILE_SIZE + TILE_SIZE / 2;
+                player.pixelY = H - TILE_SIZE * 2 - (player.y * TILE_SIZE) + cameraY;
+
+                // If on log, move with it
+                if (player.onLog) {
+                    player.pixelX += player.onLog.speed;
+                    player.x = Math.floor(player.pixelX / TILE_SIZE);
+
+                    // Fall off edge
+                    if (player.pixelX < 0 || player.pixelX > W) {
+                        die('splash');
+                    }
+                }
+            }
+
+            // Update camera to follow player
+            const targetCameraY = Math.max(0, player.y * TILE_SIZE - H / 2);
+            cameraY += (targetCameraY - cameraY) * 0.1;
+
+            // Check if player is too far behind
+            if (player.pixelY > H + 50) {
+                die('hit');
+            }
+        }
+
+        // ============================================
+        // COLLISIONS
+        // ============================================
+        function checkCollisions() {
+            if (player.dead || player.moving) return;
+
+            const row = rows.find(r => r.y === player.y);
+            if (!row) return;
+
+            const playerCenterX = player.pixelX;
+
+            switch (row.type) {
+                case 'road':
+                    // Check car collision
+                    for (const car of row.objects) {
+                        const carLeft = car.x;
+                        const carRight = car.x + car.width;
+
+                        if (playerCenterX > carLeft - 15 && playerCenterX < carRight + 15) {
+                            die('hit');
+                            return;
+                        }
+                    }
+                    break;
+
+                case 'river':
+                    // Must be on a log
+                    let onLog = false;
+                    for (const log of row.objects) {
+                        const logLeft = log.x;
+                        const logRight = log.x + log.width;
+
+                        if (playerCenterX > logLeft - 10 && playerCenterX < logRight + 10) {
+                            onLog = true;
+                            player.onLog = log;
+                            break;
+                        }
+                    }
+
+                    if (!onLog) {
+                        die('splash');
+                        return;
+                    }
+                    break;
+
+                case 'train':
+                    if (row.trainActive) {
+                        const trainLeft = row.trainX;
+                        const trainRight = row.trainX + 600;
+
+                        if (playerCenterX > trainLeft && playerCenterX < trainRight) {
+                            die('hit');
+                            return;
+                        }
+                    }
+                    break;
+
+                default:
+                    player.onLog = null;
+            }
+
+            if (row.type !== 'river') {
+                player.onLog = null;
+            }
+        }
+
+        function die(type) {
+            player.dead = true;
+            playSound(type);
+
+            setTimeout(() => {
+                // Save coins
+                totalCoins += coinsThisRun;
+                localStorage.setItem('crossyCoins', totalCoins);
+
+                // Check high score
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('crossyHighScore', highScore);
+                }
+
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('finalHighScore').textContent = highScore;
+                document.getElementById('coinsEarned').textContent = coinsThisRun;
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            }, 500);
+        }
+
+        // ============================================
+        // UPDATE WORLD
+        // ============================================
+        function updateWorld() {
+            // Generate new rows as needed
+            const maxY = player.y + 15;
+            while (rows[rows.length - 1].y < maxY) {
+                rows.push(generateRow(rows[rows.length - 1].y + 1));
+            }
+
+            // Remove old rows
+            while (rows.length > 0 && rows[0].y < player.y - 10) {
+                rows.shift();
+            }
+
+            // Update moving objects
+            rows.forEach(row => {
+                if (row.type === 'road' || row.type === 'river') {
+                    row.objects.forEach(obj => {
+                        obj.x += obj.speed;
+
+                        // Wrap around
+                        if (obj.speed > 0 && obj.x > W + obj.width) {
+                            obj.x = -obj.width;
+                        } else if (obj.speed < 0 && obj.x < -obj.width) {
+                            obj.x = W + obj.width;
+                        }
+                    });
+                }
+
+                if (row.type === 'train') {
+                    // Random train spawning
+                    if (!row.trainActive && Math.random() < 0.003) {
+                        row.trainWarning = 120; // 2 seconds warning
+                        playSound('warning');
+                    }
+
+                    if (row.trainWarning > 0) {
+                        row.trainWarning--;
+                        if (row.trainWarning === 0) {
+                            row.trainActive = true;
+                            row.trainX = row.trainDirection > 0 ? -600 : W + 100;
+                            playSound('train');
+                        }
+                    }
+
+                    if (row.trainActive) {
+                        row.trainX += row.trainSpeed * row.trainDirection;
+
+                        if ((row.trainDirection > 0 && row.trainX > W + 100) ||
+                            (row.trainDirection < 0 && row.trainX < -700)) {
+                            row.trainActive = false;
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // DRAWING
+        // ============================================
+        function draw() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, W, H);
+
+            // Draw rows
+            rows.forEach(row => {
+                const screenY = H - TILE_SIZE - (row.y * TILE_SIZE) + cameraY;
+
+                if (screenY < -TILE_SIZE || screenY > H + TILE_SIZE) return;
+
+                // Row background
+                switch (row.type) {
+                    case 'grass':
+                        ctx.fillStyle = '#4CAF50';
+                        break;
+                    case 'road':
+                        ctx.fillStyle = '#424242';
+                        break;
+                    case 'river':
+                        ctx.fillStyle = '#2196F3';
+                        break;
+                    case 'train':
+                        ctx.fillStyle = '#795548';
+                        break;
+                }
+
+                ctx.fillRect(0, screenY, W, TILE_SIZE);
+
+                // Row details
+                switch (row.type) {
+                    case 'grass':
+                        // Grass texture
+                        ctx.fillStyle = '#66BB6A';
+                        for (let x = 0; x < COLS; x++) {
+                            if ((x + row.y) % 2 === 0) {
+                                ctx.fillRect(x * TILE_SIZE, screenY, TILE_SIZE, TILE_SIZE);
+                            }
+                        }
+                        break;
+
+                    case 'road':
+                        // Road lines
+                        ctx.strokeStyle = '#FFF';
+                        ctx.setLineDash([20, 20]);
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(0, screenY + TILE_SIZE / 2);
+                        ctx.lineTo(W, screenY + TILE_SIZE / 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        break;
+
+                    case 'river':
+                        // Water ripples
+                        ctx.fillStyle = '#42A5F5';
+                        for (let x = 0; x < W; x += 30) {
+                            const rippleOffset = Math.sin((x + frameCount * 2 + row.y * 20) * 0.05) * 3;
+                            ctx.beginPath();
+                            ctx.arc(x, screenY + TILE_SIZE / 2 + rippleOffset, 5, 0, Math.PI);
+                            ctx.fill();
+                        }
+                        break;
+
+                    case 'train':
+                        // Train tracks
+                        ctx.fillStyle = '#5D4037';
+                        ctx.fillRect(0, screenY + 5, W, 5);
+                        ctx.fillRect(0, screenY + TILE_SIZE - 10, W, 5);
+
+                        // Railroad ties
+                        ctx.fillStyle = '#8D6E63';
+                        for (let x = 0; x < W; x += 30) {
+                            ctx.fillRect(x, screenY, 10, TILE_SIZE);
+                        }
+
+                        // Warning lights
+                        if (row.trainWarning > 0) {
+                            ctx.fillStyle = frameCount % 20 < 10 ? '#f00' : '#600';
+                            ctx.beginPath();
+                            ctx.arc(30, screenY + TILE_SIZE / 2, 10, 0, Math.PI * 2);
+                            ctx.arc(W - 30, screenY + TILE_SIZE / 2, 10, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                }
+
+                // Draw objects
+                row.objects.forEach(obj => {
+                    switch (obj.type) {
+                        case 'tree':
+                            // Tree trunk
+                            ctx.fillStyle = '#8B4513';
+                            ctx.fillRect(obj.x * TILE_SIZE + 18, screenY + 25, 14, 25);
+                            // Tree top
+                            ctx.fillStyle = '#228B22';
+                            ctx.beginPath();
+                            ctx.arc(obj.x * TILE_SIZE + 25, screenY + 20, 20, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+
+                        case 'car':
+                            ctx.fillStyle = ['#f44336', '#2196F3', '#FFEB3B', '#9C27B0'][Math.floor(obj.x) % 4];
+                            ctx.fillRect(obj.x, screenY + 8, obj.width, 35);
+                            // Windows
+                            ctx.fillStyle = '#81D4FA';
+                            ctx.fillRect(obj.x + 8, screenY + 12, 15, 15);
+                            ctx.fillRect(obj.x + obj.width - 23, screenY + 12, 15, 15);
+                            // Wheels
+                            ctx.fillStyle = '#333';
+                            ctx.beginPath();
+                            ctx.arc(obj.x + 12, screenY + 43, 6, 0, Math.PI * 2);
+                            ctx.arc(obj.x + obj.width - 12, screenY + 43, 6, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+
+                        case 'truck':
+                            ctx.fillStyle = '#FF9800';
+                            ctx.fillRect(obj.x, screenY + 5, obj.width, 40);
+                            ctx.fillStyle = '#F57C00';
+                            ctx.fillRect(obj.x, screenY + 5, 25, 40);
+                            // Windows
+                            ctx.fillStyle = '#81D4FA';
+                            ctx.fillRect(obj.x + 5, screenY + 10, 15, 15);
+                            break;
+
+                        case 'log':
+                            ctx.fillStyle = '#8D6E63';
+                            ctx.fillRect(obj.x, screenY + 10, obj.width, 30);
+                            ctx.fillStyle = '#6D4C41';
+                            ctx.beginPath();
+                            ctx.arc(obj.x, screenY + 25, 15, 0, Math.PI * 2);
+                            ctx.arc(obj.x + obj.width, screenY + 25, 15, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+
+                        case 'lilypad':
+                            ctx.fillStyle = '#4CAF50';
+                            ctx.beginPath();
+                            ctx.ellipse(obj.x + 25, screenY + 25, 22, 18, 0, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.fillStyle = '#66BB6A';
+                            ctx.beginPath();
+                            ctx.ellipse(obj.x + 25, screenY + 25, 15, 12, 0, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                    }
+                });
+
+                // Train
+                if (row.type === 'train' && row.trainActive) {
+                    // Train cars
+                    ctx.fillStyle = '#D32F2F';
+                    ctx.fillRect(row.trainX, screenY + 3, 100, 44);
+                    ctx.fillStyle = '#1976D2';
+                    for (let i = 1; i < 5; i++) {
+                        ctx.fillRect(row.trainX + i * 110, screenY + 5, 100, 40);
+                    }
+                    // Wheels
+                    ctx.fillStyle = '#333';
+                    for (let i = 0; i < 5; i++) {
+                        ctx.beginPath();
+                        ctx.arc(row.trainX + i * 110 + 20, screenY + 45, 8, 0, Math.PI * 2);
+                        ctx.arc(row.trainX + i * 110 + 80, screenY + 45, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                // Coin
+                if (row.coin && !row.coin.collected) {
+                    const coinX = row.coin.x * TILE_SIZE + TILE_SIZE / 2;
+                    const coinY = screenY + TILE_SIZE / 2;
+                    const bounce = Math.sin(frameCount * 0.1) * 3;
+
+                    ctx.fillStyle = '#FFD700';
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(coinX, coinY + bounce, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    ctx.arc(coinX - 3, coinY + bounce - 3, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Draw player
+            if (!player.dead) {
+                const char = CHARACTERS.find(c => c.id === selectedCharacter);
+                ctx.font = '35px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(char.emoji, player.pixelX, player.pixelY);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(player.pixelX, player.pixelY + 20, 15, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // HUD
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 36px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(score, W / 2, 45);
+            ctx.fillText(score, W / 2, 45);
+
+            // Coins
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText('🪙 ' + coinsThisRun, 15, 35);
+        }
+
+        // ============================================
+        // GAME LOOP
+        // ============================================
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            frameCount++;
+
+            updatePlayer();
+            updateWorld();
+            checkCollisions();
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            initAudio();
+
+            score = 0;
+            maxScore = 0;
+            coinsThisRun = 0;
+            cameraY = 0;
+            frameCount = 0;
+
+            initWorld();
+            player = createPlayer();
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('shopScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+
+            gameRunning = true;
+            gameLoop();
+        }
+
+        // ============================================
+        // CHARACTER SHOP
+        // ============================================
+        function renderCharacterGrid() {
+            const grid = document.getElementById('characterGrid');
+            document.getElementById('shopCoins').textContent = totalCoins;
+
+            grid.innerHTML = CHARACTERS.map(char => {
+                const owned = unlockedCharacters.includes(char.id);
+                const selected = char.id === selectedCharacter;
+
+                return `
+                    <div class="character-btn ${selected ? 'selected' : ''} ${!owned ? 'locked' : ''}"
+                         data-id="${char.id}" data-price="${char.price}">
+                        <span>${char.emoji}</span>
+                        ${!owned ? `<span class="price">${char.price}</span>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.character-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    const price = parseInt(btn.dataset.price);
+                    const owned = unlockedCharacters.includes(id);
+
+                    if (owned) {
+                        selectedCharacter = id;
+                        localStorage.setItem('crossySelected', selectedCharacter);
+                        renderCharacterGrid();
+                    } else if (totalCoins >= price) {
+                        totalCoins -= price;
+                        unlockedCharacters.push(id);
+                        selectedCharacter = id;
+                        localStorage.setItem('crossyCoins', totalCoins);
+                        localStorage.setItem('crossyCharacters', JSON.stringify(unlockedCharacters));
+                        localStorage.setItem('crossySelected', selectedCharacter);
+                        document.getElementById('totalCoinsDisplay').textContent = totalCoins;
+                        playSound('coin');
+                        renderCharacterGrid();
+                    }
+                });
+            });
+        }
+
+        // ============================================
+        // INPUT
+        // ============================================
+        document.addEventListener('keydown', e => {
+            if (!gameRunning) return;
+
+            switch (e.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    e.preventDefault();
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    e.preventDefault();
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    e.preventDefault();
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    e.preventDefault();
+                    movePlayer(1, 0);
+                    break;
+            }
+        });
+
+        // Touch/swipe controls
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', e => {
+            if (!gameRunning) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                // Tap = move forward
+                movePlayer(0, 1);
+            } else if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal swipe
+                movePlayer(dx > 0 ? 1 : -1, 0);
+            } else {
+                // Vertical swipe
+                movePlayer(0, dy < 0 ? 1 : -1);
+            }
+        });
+
+        // Buttons
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('shopBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            renderCharacterGrid();
+            document.getElementById('shopScreen').classList.remove('hidden');
+        });
+        document.getElementById('shopBackBtn').addEventListener('click', () => {
+            document.getElementById('shopScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('totalCoinsDisplay').textContent = totalCoins;
+        });
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            gameRunning = false;
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('highScoreDisplay').textContent = highScore;
+            document.getElementById('totalCoinsDisplay').textContent = totalCoins;
+        });
+    </script>
+</body>
+</html>
