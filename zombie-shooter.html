@@ -1514,8 +1514,9 @@
                     else ctx.fillText(`DMG:${item.damage}`, px + 220, itemY + itemH/2 + 5);
 
                     ctx.textAlign = 'right';
+                    const keyHint = index < 9 ? (index + 1) : index === 9 ? '0' : index === 10 ? '-' : '=';
                     if (isEquipped) { ctx.fillStyle = '#4CAF50'; ctx.font = 'bold 12px Rajdhani'; ctx.fillText('✓ ACTIVE', px + pw - 35, itemY + itemH/2 + 5); }
-                    else if (owned) { ctx.fillStyle = '#2196F3'; ctx.fillText('[' + (index+1) + ']', px + pw - 35, itemY + itemH/2 + 5); }
+                    else if (owned) { ctx.fillStyle = '#2196F3'; ctx.fillText('[' + keyHint + ']', px + pw - 35, itemY + itemH/2 + 5); }
                     else { ctx.fillStyle = saveData.gold >= item.price ? '#ffd700' : '#666'; ctx.fillText(`${item.price}g`, px + pw - 35, itemY + itemH/2 + 5); }
                     itemY += itemSpacing;
                 });
@@ -1784,7 +1785,7 @@
             }
 
             ctx.fillStyle = '#666'; ctx.font = '14px Rajdhani'; ctx.textAlign = 'center';
-            ctx.fillText('Press number to buy/equip | ESC to close', W/2, py + ph - 18);
+            ctx.fillText('Keys: 1-9, 0=10, -=11, ==12 | ESC to close', W/2, py + ph - 18);
         }
 
         // ============================================
@@ -3022,6 +3023,9 @@
                 if (activeShop) {
                     if (e.key === 'Escape') activeShop = null;
                     else if (e.key >= '1' && e.key <= '9') handleShopInput(e.key);
+                    else if (e.key === '0') handleShopInput('10');
+                    else if (e.key === '-') handleShopInput('11');
+                    else if (e.key === '=') handleShopInput('12');
                 } else if (e.key === ' ' || e.key === 'Enter') {
                     for (const shop of SHOPS) {
                         if (lobbyPlayer.x > shop.x && lobbyPlayer.x < shop.x + shop.w && lobbyPlayer.y > shop.y && lobbyPlayer.y < shop.y + shop.h) {
