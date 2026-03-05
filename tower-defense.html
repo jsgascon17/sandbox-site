@@ -133,15 +133,39 @@
         <p style="color: #00d4ff; font-size: 1.3rem;">Defend Earth from the alien invasion!</p>
         <p>Place towers to stop enemies from reaching your base.</p>
         <p>Survive 20 waves to win!</p>
-        <div style="margin: 20px 0; text-align: left; background: rgba(0,212,255,0.1); padding: 20px; border-radius: 10px;">
-            <p style="color: #00ff88; margin-bottom: 10px;">TOWERS:</p>
-            <p>Laser - Fast, cheap</p>
-            <p>Plasma - High damage</p>
-            <p>Tesla - Chain lightning</p>
-            <p>Missile - Splash damage</p>
-            <p>Freeze - Slows enemies</p>
+        <div style="margin: 20px 0; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+            <div style="text-align: left; background: rgba(0,212,255,0.1); padding: 15px; border-radius: 10px; min-width: 180px;">
+                <p style="color: #00ff88; margin-bottom: 10px;">TOWERS:</p>
+                <p style="font-size: 0.85rem;">Laser - Fast, cheap</p>
+                <p style="font-size: 0.85rem;">Plasma - High damage</p>
+                <p style="font-size: 0.85rem;">Tesla - Chain lightning</p>
+                <p style="font-size: 0.85rem;">Missile - Splash damage</p>
+                <p style="font-size: 0.85rem;">Freeze - Slows enemies</p>
+                <p style="font-size: 0.85rem;">Sniper - Long range</p>
+                <p style="font-size: 0.85rem;">Swarm - Multi-target</p>
+                <p style="font-size: 0.85rem;">Vortex - AOE slow</p>
+            </div>
+            <div style="text-align: left; background: rgba(255,100,0,0.1); padding: 15px; border-radius: 10px; min-width: 180px;">
+                <p style="color: #ff8800; margin-bottom: 10px;">ENEMIES:</p>
+                <p style="font-size: 0.85rem;">Scout - Fast, weak</p>
+                <p style="font-size: 0.85rem;">Soldier - Balanced</p>
+                <p style="font-size: 0.85rem;">Heavy - Tanky, slow</p>
+                <p style="font-size: 0.85rem;">Racer - Very fast</p>
+                <p style="font-size: 0.85rem;">Regen - Heals over time</p>
+                <p style="font-size: 0.85rem;">Stealth - Hard to see</p>
+                <p style="font-size: 0.85rem;">Splitter - Splits on death</p>
+            </div>
         </div>
-        <button class="btn" id="playBtn" style="margin-top: 20px; font-size: 1.2rem; padding: 15px 50px;">DEFEND EARTH</button>
+        <div style="margin: 20px 0;">
+            <p style="color: #00ff88; margin-bottom: 10px;">SELECT MAP:</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn map-btn" data-map="classic" style="padding: 10px 20px; font-size: 0.9rem; background: rgba(0,212,255,0.3);">Classic</button>
+                <button class="btn map-btn" data-map="serpent" style="padding: 10px 20px; font-size: 0.9rem;">Serpent</button>
+                <button class="btn map-btn" data-map="spiral" style="padding: 10px 20px; font-size: 0.9rem;">Spiral</button>
+            </div>
+            <p id="mapDesc" style="color: #888; margin-top: 10px; font-size: 0.9rem;">The original winding path</p>
+        </div>
+        <button class="btn" id="playBtn" style="margin-top: 10px; font-size: 1.2rem; padding: 15px 50px;">DEFEND EARTH</button>
     </div>
 
     <!-- Victory Screen -->
@@ -216,7 +240,10 @@
             plasma: { name: 'Plasma', cost: 100, damage: 35, range: 100, fireRate: 800, color: '#ff00ff', sound: 'plasma', icon: 'O' },
             tesla: { name: 'Tesla', cost: 150, damage: 8, range: 110, fireRate: 300, color: '#00ffff', sound: 'tesla', icon: '*', chain: 3 },
             missile: { name: 'Missile', cost: 200, damage: 50, range: 150, fireRate: 1200, color: '#ff6600', sound: 'missile', icon: '^', splash: 40 },
-            freeze: { name: 'Freeze', cost: 125, damage: 5, range: 100, fireRate: 400, color: '#88ccff', sound: 'freeze', icon: '#', slow: 0.5 }
+            freeze: { name: 'Freeze', cost: 125, damage: 5, range: 100, fireRate: 400, color: '#88ccff', sound: 'freeze', icon: '#', slow: 0.5 },
+            sniper: { name: 'Sniper', cost: 175, damage: 100, range: 250, fireRate: 1500, color: '#ff0088', sound: 'plasma', icon: '|' },
+            swarm: { name: 'Swarm', cost: 225, damage: 5, range: 100, fireRate: 100, color: '#ffff00', sound: 'laser', icon: '~', multishot: 3 },
+            vortex: { name: 'Vortex', cost: 300, damage: 3, range: 80, fireRate: 50, color: '#8800ff', sound: 'freeze', icon: '@', aoe: true, slowAll: 0.3 }
         };
 
         // ============================================
@@ -227,6 +254,9 @@
             soldier: { name: 'Soldier', health: 80, speed: 1.2, reward: 20, color: '#ffff00', size: 0.6 },
             heavy: { name: 'Heavy', health: 200, speed: 0.7, reward: 40, color: '#ff8800', size: 0.8 },
             racer: { name: 'Racer', health: 50, speed: 3, reward: 25, color: '#ff00ff', size: 0.45 },
+            regen: { name: 'Regen', health: 120, speed: 1, reward: 35, color: '#00ff88', size: 0.55, regenRate: 2 },
+            stealth: { name: 'Stealth', health: 60, speed: 1.5, reward: 30, color: '#4444ff', size: 0.5, stealth: true },
+            splitter: { name: 'Splitter', health: 100, speed: 1.3, reward: 15, color: '#ff88ff', size: 0.6, splits: 2 },
             boss: { name: 'Boss', health: 1000, speed: 0.5, reward: 200, color: '#ff0000', size: 1.2, liveCost: 5 },
             superboss: { name: 'DOOM', health: 50000, speed: 0.4, reward: 5000, color: '#8B00FF', size: 2.0, liveCost: 20, destroysTowers: true }
         };
@@ -236,28 +266,73 @@
         const SECRET_WORD = 'DOOM';
 
         // ============================================
-        // PATH DEFINITION (grid coordinates)
+        // MAP DEFINITIONS (multiple paths)
         // ============================================
-        const PATH = [
-            {x: -1, y: 4},
-            {x: 0, y: 4}, {x: 1, y: 4}, {x: 2, y: 4}, {x: 3, y: 4}, {x: 4, y: 4},
-            {x: 4, y: 3}, {x: 4, y: 2}, {x: 4, y: 1},
-            {x: 5, y: 1}, {x: 6, y: 1}, {x: 7, y: 1}, {x: 8, y: 1},
-            {x: 8, y: 2}, {x: 8, y: 3}, {x: 8, y: 4}, {x: 8, y: 5}, {x: 8, y: 6}, {x: 8, y: 7},
-            {x: 9, y: 7}, {x: 10, y: 7}, {x: 11, y: 7},
-            {x: 11, y: 6}, {x: 11, y: 5}, {x: 11, y: 4},
-            {x: 12, y: 4}, {x: 13, y: 4}, {x: 14, y: 4}, {x: 15, y: 4},
-            {x: 16, y: 4}
-        ];
+        const MAPS = {
+            classic: {
+                name: 'Classic',
+                desc: 'The original winding path',
+                path: [
+                    {x: -1, y: 4},
+                    {x: 0, y: 4}, {x: 1, y: 4}, {x: 2, y: 4}, {x: 3, y: 4}, {x: 4, y: 4},
+                    {x: 4, y: 3}, {x: 4, y: 2}, {x: 4, y: 1},
+                    {x: 5, y: 1}, {x: 6, y: 1}, {x: 7, y: 1}, {x: 8, y: 1},
+                    {x: 8, y: 2}, {x: 8, y: 3}, {x: 8, y: 4}, {x: 8, y: 5}, {x: 8, y: 6}, {x: 8, y: 7},
+                    {x: 9, y: 7}, {x: 10, y: 7}, {x: 11, y: 7},
+                    {x: 11, y: 6}, {x: 11, y: 5}, {x: 11, y: 4},
+                    {x: 12, y: 4}, {x: 13, y: 4}, {x: 14, y: 4}, {x: 15, y: 4},
+                    {x: 16, y: 4}
+                ]
+            },
+            serpent: {
+                name: 'Serpent',
+                desc: 'A long snake-like path',
+                path: [
+                    {x: -1, y: 1},
+                    {x: 0, y: 1}, {x: 1, y: 1}, {x: 2, y: 1}, {x: 3, y: 1}, {x: 4, y: 1}, {x: 5, y: 1}, {x: 6, y: 1}, {x: 7, y: 1}, {x: 8, y: 1}, {x: 9, y: 1}, {x: 10, y: 1}, {x: 11, y: 1}, {x: 12, y: 1}, {x: 13, y: 1}, {x: 14, y: 1},
+                    {x: 14, y: 2}, {x: 14, y: 3}, {x: 14, y: 4},
+                    {x: 13, y: 4}, {x: 12, y: 4}, {x: 11, y: 4}, {x: 10, y: 4}, {x: 9, y: 4}, {x: 8, y: 4}, {x: 7, y: 4}, {x: 6, y: 4}, {x: 5, y: 4}, {x: 4, y: 4}, {x: 3, y: 4}, {x: 2, y: 4}, {x: 1, y: 4},
+                    {x: 1, y: 5}, {x: 1, y: 6}, {x: 1, y: 7},
+                    {x: 2, y: 7}, {x: 3, y: 7}, {x: 4, y: 7}, {x: 5, y: 7}, {x: 6, y: 7}, {x: 7, y: 7}, {x: 8, y: 7}, {x: 9, y: 7}, {x: 10, y: 7}, {x: 11, y: 7}, {x: 12, y: 7}, {x: 13, y: 7}, {x: 14, y: 7}, {x: 15, y: 7},
+                    {x: 15, y: 6}, {x: 15, y: 5}, {x: 15, y: 4},
+                    {x: 16, y: 4}
+                ]
+            },
+            spiral: {
+                name: 'Spiral',
+                desc: 'Enemies circle inward',
+                path: [
+                    {x: -1, y: 0},
+                    {x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0}, {x: 3, y: 0}, {x: 4, y: 0}, {x: 5, y: 0}, {x: 6, y: 0}, {x: 7, y: 0}, {x: 8, y: 0}, {x: 9, y: 0}, {x: 10, y: 0}, {x: 11, y: 0}, {x: 12, y: 0}, {x: 13, y: 0}, {x: 14, y: 0}, {x: 15, y: 0},
+                    {x: 15, y: 1}, {x: 15, y: 2}, {x: 15, y: 3}, {x: 15, y: 4}, {x: 15, y: 5}, {x: 15, y: 6}, {x: 15, y: 7}, {x: 15, y: 8}, {x: 15, y: 9},
+                    {x: 14, y: 9}, {x: 13, y: 9}, {x: 12, y: 9}, {x: 11, y: 9}, {x: 10, y: 9}, {x: 9, y: 9}, {x: 8, y: 9}, {x: 7, y: 9}, {x: 6, y: 9}, {x: 5, y: 9}, {x: 4, y: 9}, {x: 3, y: 9}, {x: 2, y: 9},
+                    {x: 2, y: 8}, {x: 2, y: 7}, {x: 2, y: 6}, {x: 2, y: 5}, {x: 2, y: 4}, {x: 2, y: 3},
+                    {x: 3, y: 3}, {x: 4, y: 3}, {x: 5, y: 3}, {x: 6, y: 3}, {x: 7, y: 3}, {x: 8, y: 3}, {x: 9, y: 3}, {x: 10, y: 3}, {x: 11, y: 3}, {x: 12, y: 3},
+                    {x: 12, y: 4}, {x: 12, y: 5}, {x: 12, y: 6},
+                    {x: 11, y: 6}, {x: 10, y: 6}, {x: 9, y: 6}, {x: 8, y: 6}, {x: 7, y: 6}, {x: 6, y: 6}, {x: 5, y: 6},
+                    {x: 5, y: 5},
+                    {x: 6, y: 5}, {x: 7, y: 5}, {x: 8, y: 5}, {x: 9, y: 5}
+                ]
+            }
+        };
 
-        // Convert path to pixel positions
-        const PATH_PIXELS = PATH.map(p => ({
-            x: p.x * TILE_W + TILE_W / 2,
-            y: p.y * TILE_H + TILE_H / 2
-        }));
+        let currentMap = 'classic';
+        let PATH = MAPS.classic.path;
+        let PATH_PIXELS = [];
+        let PATH_TILES = new Set();
 
-        // Path tiles for checking placement
-        const PATH_TILES = new Set(PATH.map(p => `${p.x},${p.y}`));
+        function setMap(mapId) {
+            currentMap = mapId;
+            PATH = MAPS[mapId].path;
+            PATH_PIXELS = PATH.map(p => ({
+                x: p.x * TILE_W + TILE_W / 2,
+                y: p.y * TILE_H + TILE_H / 2
+            }));
+            PATH_TILES = new Set(PATH.map(p => `${p.x},${p.y}`));
+        }
+
+        // Initialize default map
+        setMap('classic');
 
         // ============================================
         // GAME STATE
@@ -300,30 +375,54 @@
                 // Boss wave
                 for (let i = 0; i < waveNum / 2; i++) waves.push('soldier');
                 for (let i = 0; i < waveNum / 3; i++) waves.push('heavy');
+                if (waveNum >= 10) waves.push('regen');
+                if (waveNum >= 15) waves.push('stealth');
                 waves.push('boss');
             } else if (waveNum <= 3) {
                 // Early waves - just scouts
                 for (let i = 0; i < 5 + waveNum * 2; i++) waves.push('scout');
-            } else if (waveNum <= 7) {
-                // Mix scouts and soldiers
+            } else if (waveNum <= 5) {
+                // Introduce stealth
                 for (let i = 0; i < 3 + waveNum; i++) waves.push('scout');
                 for (let i = 0; i < waveNum - 2; i++) waves.push('soldier');
+                if (waveNum >= 5) waves.push('stealth');
+            } else if (waveNum <= 8) {
+                // Mix scouts, soldiers, introduce regen
+                for (let i = 0; i < waveNum; i++) waves.push('scout');
+                for (let i = 0; i < waveNum - 3; i++) waves.push('soldier');
+                for (let i = 0; i < Math.floor(waveNum / 4); i++) waves.push('regen');
+                waves.push('stealth');
             } else if (waveNum <= 12) {
-                // Add heavies
+                // Add heavies and splitters
                 for (let i = 0; i < waveNum; i++) waves.push('scout');
                 for (let i = 0; i < waveNum - 3; i++) waves.push('soldier');
                 for (let i = 0; i < Math.floor(waveNum / 4); i++) waves.push('heavy');
+                for (let i = 0; i < Math.floor(waveNum / 5); i++) waves.push('regen');
+                for (let i = 0; i < Math.floor(waveNum / 6); i++) waves.push('splitter');
+                for (let i = 0; i < 2; i++) waves.push('stealth');
             } else if (waveNum <= 17) {
                 // Add racers
                 for (let i = 0; i < waveNum - 5; i++) waves.push('scout');
                 for (let i = 0; i < waveNum - 5; i++) waves.push('soldier');
                 for (let i = 0; i < Math.floor(waveNum / 3); i++) waves.push('heavy');
                 for (let i = 0; i < Math.floor(waveNum / 4); i++) waves.push('racer');
+                for (let i = 0; i < Math.floor(waveNum / 5); i++) waves.push('regen');
+                for (let i = 0; i < Math.floor(waveNum / 5); i++) waves.push('splitter');
+                for (let i = 0; i < 3; i++) waves.push('stealth');
             } else {
                 // Late game - everything
                 for (let i = 0; i < waveNum - 8; i++) waves.push('soldier');
                 for (let i = 0; i < waveNum - 10; i++) waves.push('heavy');
                 for (let i = 0; i < waveNum - 12; i++) waves.push('racer');
+                for (let i = 0; i < Math.floor(waveNum / 4); i++) waves.push('regen');
+                for (let i = 0; i < Math.floor(waveNum / 4); i++) waves.push('splitter');
+                for (let i = 0; i < 4; i++) waves.push('stealth');
+            }
+
+            // Shuffle for variety
+            for (let i = waves.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [waves[i], waves[j]] = [waves[j], waves[i]];
             }
 
             // Scale health with wave number
@@ -499,11 +598,24 @@
                 const enemy = ENEMIES[e.type];
                 const size = TILE_W * enemy.size * 0.4;
 
+                // Stealth enemies are semi-transparent when not revealed
+                if (enemy.stealth && !e.revealed) {
+                    ctx.globalAlpha = 0.2;
+                }
+
                 // Shadow
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.beginPath();
                 ctx.ellipse(e.x, e.y + size * 0.3, size * 0.8, size * 0.3, 0, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Regen glow
+                if (enemy.regenRate) {
+                    ctx.fillStyle = `rgba(0, 255, 136, ${0.2 + Math.sin(frame * 0.1) * 0.1})`;
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, size * 1.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
                 // Body
                 ctx.fillStyle = e.slowed ? '#88ccff' : enemy.color;
@@ -556,6 +668,27 @@
                     ctx.fillText('DOOM', e.x, e.y - size - 18);
                     ctx.shadowBlur = 0;
                 }
+
+                // Special enemy labels
+                if (e.type === 'regen') {
+                    ctx.fillStyle = '#00ff88';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('REGEN', e.x, e.y - size - 12);
+                } else if (e.type === 'stealth' && !e.revealed) {
+                    ctx.fillStyle = '#4444ff';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('???', e.x, e.y - size - 12);
+                } else if (e.type === 'splitter') {
+                    ctx.fillStyle = '#ff88ff';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('SPLIT', e.x, e.y - size - 12);
+                }
+
+                // Reset alpha for stealth
+                ctx.globalAlpha = 1;
             });
         }
 
@@ -671,6 +804,20 @@
 
         function updateEnemies() {
             enemies.forEach(e => {
+                // Regeneration
+                if (ENEMIES[e.type].regenRate && e.health < e.maxHealth) {
+                    e.health = Math.min(e.maxHealth, e.health + ENEMIES[e.type].regenRate * 0.016 * gameSpeed);
+                }
+
+                // Stealth reveal (when near towers)
+                if (ENEMIES[e.type].stealth) {
+                    e.revealed = towers.some(t => {
+                        const dx = t.x - e.x;
+                        const dy = t.y - e.y;
+                        return Math.sqrt(dx * dx + dy * dy) < 60;
+                    });
+                }
+
                 // Apply slow (super boss immune)
                 let speed = e.speed;
                 if (e.slowed > 0 && e.type !== 'superboss') {
@@ -743,11 +890,42 @@
                 const tower = TOWERS[t.type];
                 if (now - t.lastShot < tower.fireRate / gameSpeed) return;
 
-                // Find target in range
+                // Vortex tower - AOE slow and damage
+                if (tower.aoe) {
+                    let hitAny = false;
+                    enemies.forEach(e => {
+                        const dx = e.x - t.x;
+                        const dy = e.y - t.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist <= tower.range) {
+                            e.health -= tower.damage;
+                            e.slowed = 30;
+                            hitAny = true;
+                            if (e.health <= 0) enemyKilled(e);
+                        }
+                    });
+                    if (hitAny) {
+                        t.lastShot = now;
+                        // Vortex visual
+                        particles.push({
+                            type: 'explosion',
+                            x: t.x, y: t.y,
+                            color: tower.color,
+                            size: tower.range,
+                            life: 0.3
+                        });
+                    }
+                    return;
+                }
+
+                // Find target in range (ignore stealth unless revealed)
                 let target = null;
                 let furthestProgress = -1;
 
                 enemies.forEach(e => {
+                    // Stealth enemies can't be targeted unless revealed
+                    if (ENEMIES[e.type].stealth && !e.revealed) return;
+
                     const dx = e.x - t.x;
                     const dy = e.y - t.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -761,6 +939,30 @@
                 if (target) {
                     t.lastShot = now;
                     playSound(tower.sound);
+
+                    // Swarm tower - multishot
+                    if (tower.multishot) {
+                        const targets = enemies.filter(e => {
+                            if (ENEMIES[e.type].stealth && !e.revealed) return false;
+                            const dx = e.x - t.x;
+                            const dy = e.y - t.y;
+                            return Math.sqrt(dx * dx + dy * dy) <= tower.range;
+                        }).slice(0, tower.multishot);
+
+                        targets.forEach(tgt => {
+                            tgt.health -= tower.damage;
+                            if (tgt.health <= 0) enemyKilled(tgt);
+                            projectiles.push({
+                                x: t.x, y: t.y,
+                                targetX: tgt.x, targetY: tgt.y,
+                                speed: 15,
+                                damage: 0,
+                                color: tower.color,
+                                size: 3
+                            });
+                        });
+                        return;
+                    }
 
                     if (tower.chain) {
                         // Tesla chain lightning
@@ -849,6 +1051,23 @@
             goldEl.textContent = gold;
             playSound('enemyDie');
             updateTowerBar();
+
+            // Splitter spawns mini enemies
+            if (enemy.splits && e.pathIndex > 0) {
+                for (let i = 0; i < enemy.splits; i++) {
+                    const mini = {
+                        type: 'scout',
+                        x: e.x + (Math.random() - 0.5) * 20,
+                        y: e.y + (Math.random() - 0.5) * 20,
+                        health: 20,
+                        maxHealth: 20,
+                        speed: 2.5,
+                        pathIndex: e.pathIndex,
+                        slowed: 0
+                    };
+                    enemies.push(mini);
+                }
+            }
 
             // Death particles
             for (let i = 0; i < 8; i++) {
@@ -1133,6 +1352,18 @@
         document.getElementById('playBtn').onclick = startGame;
         document.getElementById('victoryBtn').onclick = startGame;
         document.getElementById('retryBtn').onclick = startGame;
+
+        // Map selection
+        document.querySelectorAll('.map-btn').forEach(btn => {
+            btn.onclick = () => {
+                const mapId = btn.dataset.map;
+                setMap(mapId);
+                document.querySelectorAll('.map-btn').forEach(b => {
+                    b.style.background = b.dataset.map === mapId ? 'rgba(0,212,255,0.3)' : 'transparent';
+                });
+                document.getElementById('mapDesc').textContent = MAPS[mapId].desc;
+            };
+        });
 
         // Start
         initTowerBar();

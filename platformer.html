@@ -755,7 +755,8 @@
         }
 
         function updateBoss() {
-            if (!boss || boss.hitCooldown > 0) boss.hitCooldown--;
+            if (!boss) return;
+            if (boss.hitCooldown > 0) boss.hitCooldown--;
 
             // Movement AI
             const distToPlayer = player.x - boss.x;
@@ -1343,8 +1344,8 @@
                 }
             });
 
-            // Flag
-            if (player.x + player.width > flag.x &&
+            // Flag (only check if flag exists - no flag during boss fights)
+            if (flag && player.x + player.width > flag.x &&
                 player.x < flag.x + flag.width &&
                 player.y + player.height > flag.y) {
                 levelComplete();

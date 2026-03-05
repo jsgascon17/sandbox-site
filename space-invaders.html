@@ -248,8 +248,28 @@
     <div class="overlay" id="startScreen">
         <div class="start-aliens">👾 👾 👾 👾 👾</div>
         <h2>SPACE INVADERS</h2>
-        <p style="color: #0f0; margin-bottom: 30px;">Destroy all aliens before they reach Earth!</p>
-        <button class="btn" id="startBtn">START GAME</button>
+        <p style="color: #0f0; margin-bottom: 15px;">Destroy all aliens before they reach Earth!</p>
+        <div style="margin: 15px 0;">
+            <p style="color: #0a0; margin-bottom: 10px;">SELECT SHIP:</p>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn skin-btn" data-skin="classic" style="padding: 8px 15px; font-size: 0.8rem; background: rgba(0,255,0,0.3);">Classic</button>
+                <button class="btn skin-btn" data-skin="crimson" style="padding: 8px 15px; font-size: 0.8rem;">Crimson</button>
+                <button class="btn skin-btn" data-skin="golden" style="padding: 8px 15px; font-size: 0.8rem;">Golden</button>
+                <button class="btn skin-btn" data-skin="plasma" style="padding: 8px 15px; font-size: 0.8rem;">Plasma</button>
+                <button class="btn skin-btn" data-skin="stealth" style="padding: 8px 15px; font-size: 0.8rem;">Stealth</button>
+                <button class="btn skin-btn" data-skin="rainbow" style="padding: 8px 15px; font-size: 0.8rem;">Rainbow</button>
+            </div>
+        </div>
+        <div style="margin: 15px 0; padding: 15px; background: rgba(0,255,0,0.1); border-radius: 10px; text-align: left;">
+            <p style="color: #0a0; margin-bottom: 8px;">POWER-UPS:</p>
+            <p style="color: #ff0; font-size: 0.85rem;">R - Rapid Fire</p>
+            <p style="color: #0ff; font-size: 0.85rem;">T - Triple Shot</p>
+            <p style="color: #f0f; font-size: 0.85rem;">P - Piercing Rounds</p>
+            <p style="color: #f80; font-size: 0.85rem;">M - Missiles</p>
+            <p style="color: #08f; font-size: 0.85rem;">S - Shield</p>
+            <p style="color: #0f0; font-size: 0.85rem;">E - Extra Life</p>
+        </div>
+        <button class="btn" id="startBtn" style="margin-top: 10px;">START GAME</button>
     </div>
 
     <!-- Game Over Screen -->
@@ -352,6 +372,46 @@
         const ALIEN_HEIGHT = 30;
         const ALIEN_PADDING = 15;
         const ALIEN_START_Y = 60;
+
+        // ============================================
+        // SHIP SKINS
+        // ============================================
+        const SHIP_SKINS = {
+            classic: { name: 'Classic', color: '#0f0', accent: '#080' },
+            crimson: { name: 'Crimson', color: '#f44', accent: '#a00' },
+            golden: { name: 'Golden', color: '#ffd700', accent: '#b8860b' },
+            plasma: { name: 'Plasma', color: '#00ffff', accent: '#008888' },
+            stealth: { name: 'Stealth', color: '#666', accent: '#333' },
+            rainbow: { name: 'Rainbow', color: 'rainbow', accent: '#fff' }
+        };
+        let currentSkin = 'classic';
+
+        // ============================================
+        // WEAPON UPGRADES
+        // ============================================
+        const WEAPONS = {
+            single: { name: 'Single Shot', fireRate: 300, damage: 1 },
+            rapid: { name: 'Rapid Fire', fireRate: 150, damage: 1 },
+            triple: { name: 'Triple Shot', fireRate: 400, damage: 1, spread: 3 },
+            pierce: { name: 'Piercing', fireRate: 350, damage: 1, pierce: true },
+            missile: { name: 'Missiles', fireRate: 600, damage: 3, explosive: true }
+        };
+        let currentWeapon = 'single';
+        let weaponTimer = 0;
+
+        // ============================================
+        // POWER-UPS
+        // ============================================
+        const POWERUP_TYPES = {
+            rapid: { name: 'Rapid Fire', color: '#ff0', duration: 8000 },
+            triple: { name: 'Triple Shot', color: '#0ff', duration: 8000 },
+            pierce: { name: 'Piercing', color: '#f0f', duration: 8000 },
+            missile: { name: 'Missiles', color: '#f80', duration: 6000 },
+            shield: { name: 'Shield', color: '#08f', duration: 5000 },
+            extraLife: { name: '+1 Life', color: '#0f0', duration: 0 }
+        };
+        let powerups = [];
+        let activeEffects = { shield: 0 };
 
         // ============================================
         // GAME STATE
@@ -520,7 +580,27 @@
         // DRAWING FUNCTIONS
         // ============================================
         function drawPlayer() {
-            ctx.fillStyle = '#0f0';
+            const skin = SHIP_SKINS[currentSkin];
+            let mainColor = skin.color;
+
+            // Rainbow skin cycles colors
+            if (mainColor === 'rainbow') {
+                const hue = (Date.now() / 20) % 360;
+                mainColor = `hsl(${hue}, 100%, 50%)`;
+            }
+
+            // Shield effect
+            if (activeEffects.shield > 0) {
+                ctx.strokeStyle = '#08f';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 35, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(0, 136, 255, 0.2)';
+                ctx.fill();
+            }
+
+            ctx.fillStyle = mainColor;
 
             // Ship body
             ctx.fillRect(player.x, player.y, player.width, player.height);
@@ -529,9 +609,18 @@
             ctx.fillRect(player.x + player.width/2 - 4, player.y - 10, 8, 10);
 
             // Ship details
-            ctx.fillStyle = '#080';
+            ctx.fillStyle = skin.accent;
             ctx.fillRect(player.x + 5, player.y + 5, 10, 10);
             ctx.fillRect(player.x + player.width - 15, player.y + 5, 10, 10);
+
+            // Weapon indicator
+            if (currentWeapon !== 'single') {
+                const weapon = WEAPONS[currentWeapon];
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(weapon.name.toUpperCase(), player.x + player.width/2, player.y - 15);
+            }
         }
 
         function drawAlien(alien) {
@@ -600,7 +689,8 @@
             // Player bullets
             bullets = bullets.filter(bullet => {
                 bullet.y -= BULLET_SPEED;
-                return bullet.y > -BULLET_HEIGHT;
+                if (bullet.dx) bullet.x += bullet.dx;
+                return bullet.y > -BULLET_HEIGHT && bullet.x > 0 && bullet.x < canvas.width;
             });
 
             // Alien bullets (some may have dx for spread shots)
@@ -609,6 +699,25 @@
                 if (bullet.dx) bullet.x += bullet.dx;
                 return bullet.y < canvas.height && bullet.x > 0 && bullet.x < canvas.width;
             });
+
+            // Update power-ups
+            powerups = powerups.filter(p => {
+                p.y += 1.5;
+                return p.y < canvas.height;
+            });
+
+            // Weapon timer countdown
+            if (weaponTimer > 0) {
+                weaponTimer -= 16;
+                if (weaponTimer <= 0) {
+                    currentWeapon = 'single';
+                }
+            }
+
+            // Shield timer
+            if (activeEffects.shield > 0) {
+                activeEffects.shield -= 16;
+            }
         }
 
         function updateAliens() {
@@ -659,13 +768,76 @@
         }
 
         // ============================================
+        // POWER-UP FUNCTIONS
+        // ============================================
+        function spawnPowerup(x, y) {
+            // 15% chance to drop a power-up
+            if (Math.random() > 0.15) return;
+
+            const types = Object.keys(POWERUP_TYPES);
+            const type = types[Math.floor(Math.random() * types.length)];
+            powerups.push({ x, y, type, size: 15 });
+        }
+
+        function collectPowerup(p) {
+            const powerup = POWERUP_TYPES[p.type];
+
+            if (p.type === 'extraLife') {
+                lives++;
+                livesDisplay.textContent = lives;
+            } else if (p.type === 'shield') {
+                activeEffects.shield = powerup.duration;
+            } else if (p.type === 'rapid' || p.type === 'triple' || p.type === 'pierce' || p.type === 'missile') {
+                currentWeapon = p.type;
+                weaponTimer = powerup.duration;
+            }
+
+            playSound('explosion');
+        }
+
+        function drawPowerups() {
+            powerups.forEach(p => {
+                const powerup = POWERUP_TYPES[p.type];
+                ctx.fillStyle = powerup.color;
+                ctx.shadowColor = powerup.color;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Letter indicator
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Courier New';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.type[0].toUpperCase(), p.x, p.y);
+            });
+        }
+
+        // ============================================
         // COLLISION DETECTION
         // ============================================
         function checkCollisions() {
+            // Player collecting power-ups
+            powerups = powerups.filter(p => {
+                if (player.x < p.x + p.size &&
+                    player.x + player.width > p.x - p.size &&
+                    player.y < p.y + p.size &&
+                    player.y + player.height > p.y - p.size) {
+                    collectPowerup(p);
+                    return false;
+                }
+                return true;
+            });
+
             // Player bullets hitting aliens
             bullets.forEach((bullet, bulletIndex) => {
+                let hitAlien = false;
+
                 aliens.forEach(alien => {
                     if (!alien.alive) return;
+                    if (hitAlien && !bullet.pierce) return;
 
                     if (bullet.x < alien.x + alien.width &&
                         bullet.x + BULLET_WIDTH > alien.x &&
@@ -674,8 +846,28 @@
 
                         // Hit!
                         alien.alive = false;
-                        bullets.splice(bulletIndex, 1);
+                        hitAlien = true;
+
+                        // Explosive bullets hit nearby aliens too
+                        if (bullet.explosive) {
+                            aliens.forEach(a2 => {
+                                if (!a2.alive || a2 === alien) return;
+                                const dx = a2.x - alien.x;
+                                const dy = a2.y - alien.y;
+                                if (Math.sqrt(dx*dx + dy*dy) < 50) {
+                                    a2.alive = false;
+                                    score += (ALIEN_ROWS - a2.type) * 10;
+                                }
+                            });
+                        }
+
+                        if (!bullet.pierce) {
+                            bullets.splice(bulletIndex, 1);
+                        }
                         playSound('explosion');
+
+                        // Spawn power-up chance
+                        spawnPowerup(alien.x + alien.width/2, alien.y + alien.height/2);
 
                         // Score based on row (top rows worth more)
                         const points = (ALIEN_ROWS - alien.type) * 10;
@@ -719,15 +911,22 @@
 
                     // Hit!
                     alienBullets.splice(index, 1);
-                    lives--;
-                    livesDisplay.textContent = lives;
-                    playSound('hit');
 
-                    if (lives <= 0) {
-                        gameOver(false);
+                    // Shield absorbs the hit
+                    if (activeEffects.shield > 0) {
+                        activeEffects.shield = 0; // Shield breaks
+                        playSound('bossHit');
                     } else {
-                        // Flash player
-                        player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
+                        lives--;
+                        livesDisplay.textContent = lives;
+                        playSound('hit');
+
+                        if (lives <= 0) {
+                            gameOver(false);
+                        } else {
+                            // Flash player
+                            player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
+                        }
                     }
                 }
             });
@@ -795,9 +994,13 @@
             alienShootChance = 0.005;
             bullets = [];
             alienBullets = [];
+            powerups = [];
             boss = null;
             bossActive = false;
             gamePaused = false;
+            currentWeapon = 'single';
+            weaponTimer = 0;
+            activeEffects = { shield: 0 };
 
             player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
 
@@ -820,13 +1023,34 @@
         function shoot() {
             if (!canShoot || !gameRunning || gamePaused) return;
 
-            bullets.push({
-                x: player.x + player.width / 2 - BULLET_WIDTH / 2,
-                y: player.y - BULLET_HEIGHT
-            });
+            const weapon = WEAPONS[currentWeapon];
+
+            if (weapon.spread) {
+                // Triple shot
+                for (let i = -1; i <= 1; i++) {
+                    bullets.push({
+                        x: player.x + player.width / 2 - BULLET_WIDTH / 2,
+                        y: player.y - BULLET_HEIGHT,
+                        dx: i * 2,
+                        pierce: weapon.pierce,
+                        damage: weapon.damage,
+                        explosive: weapon.explosive
+                    });
+                }
+            } else {
+                bullets.push({
+                    x: player.x + player.width / 2 - BULLET_WIDTH / 2,
+                    y: player.y - BULLET_HEIGHT,
+                    dx: 0,
+                    pierce: weapon.pierce,
+                    damage: weapon.damage,
+                    explosive: weapon.explosive
+                });
+            }
             playSound('shoot');
 
             canShoot = false;
+            shootCooldown = weapon.fireRate;
             setTimeout(() => canShoot = true, shootCooldown);
         }
 
@@ -869,8 +1093,9 @@
             drawPlayer();
             aliens.forEach(drawAlien);
             if (bossActive) drawBoss();
-            bullets.forEach(b => drawBullet(b, '#0f0'));
+            bullets.forEach(b => drawBullet(b, currentWeapon === 'missile' ? '#f80' : '#0f0'));
             alienBullets.forEach(b => drawBullet(b, '#f00'));
+            drawPowerups();
 
             // Pause overlay
             if (gamePaused) {
@@ -938,6 +1163,18 @@
         // Start/Restart buttons
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        // Skin selection
+        document.querySelectorAll('.skin-btn').forEach(btn => {
+            btn.onclick = () => {
+                currentSkin = btn.dataset.skin;
+                document.querySelectorAll('.skin-btn').forEach(b => {
+                    const skin = SHIP_SKINS[b.dataset.skin];
+                    const isSelected = b.dataset.skin === currentSkin;
+                    b.style.background = isSelected ? `rgba(0,255,0,0.3)` : 'transparent';
+                });
+            };
+        });
 
         // Sound toggle
         document.getElementById('soundBtn').addEventListener('click', () => {
