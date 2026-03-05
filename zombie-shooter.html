@@ -47,7 +47,7 @@
     </div>
     <canvas id="gameCanvas" width="1000" height="600"></canvas>
     <div class="instructions" id="runInstructions">
-        <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | Auto-Running
+        <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>G</span> Grenade | Auto-Running
         <button id="soundBtn" style="background: #333; border: 2px solid #e94560; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
     </div>
     <div class="instructions hidden" id="lobbyInstructions">
@@ -153,7 +153,10 @@
             smg: { name: 'SMG', damage: 12, fireRate: 70, spread: 0.1, bullets: 1, magSize: 30, reloadTime: 1500, price: 300, sound: 'rifle', color: '#2d2d2d' },
             rifle: { name: 'Rifle', damage: 40, fireRate: 130, spread: 0.02, bullets: 1, magSize: 20, reloadTime: 1800, price: 500, sound: 'rifle', color: '#1a1a1a' },
             sniper: { name: 'Sniper', damage: 150, fireRate: 1200, spread: 0, bullets: 1, magSize: 5, reloadTime: 2500, price: 750, sound: 'shotgun', color: '#333' },
-            minigun: { name: 'Minigun', damage: 10, fireRate: 35, spread: 0.15, bullets: 1, magSize: 100, reloadTime: 3000, price: 1000, sound: 'rifle', color: '#444' }
+            minigun: { name: 'Minigun', damage: 10, fireRate: 35, spread: 0.15, bullets: 1, magSize: 100, reloadTime: 3000, price: 1000, sound: 'rifle', color: '#444' },
+            rocket: { name: 'Rocket Launcher', damage: 80, fireRate: 1500, spread: 0.02, bullets: 1, magSize: 4, reloadTime: 3000, price: 1500, sound: 'explosion', color: '#2d5a27', splash: 80 },
+            flamethrower: { name: 'Flamethrower', damage: 8, fireRate: 50, spread: 0.2, bullets: 3, magSize: 50, reloadTime: 2500, price: 1200, sound: 'shoot', color: '#ff4500', burn: true },
+            laser: { name: 'Laser Rifle', damage: 60, fireRate: 400, spread: 0, bullets: 1, magSize: 15, reloadTime: 2000, price: 2000, sound: 'rifle', color: '#00ffff', pierce: true }
         };
 
         // ============================================
@@ -174,7 +177,9 @@
             speed: { name: 'SPEED', color: '#00BFFF', duration: 5000, icon: '⚡' },
             damage: { name: '2X DMG', color: '#FF4500', duration: 6000, icon: '💥' },
             rapid: { name: 'RAPID', color: '#FFD700', duration: 4000, icon: '🔥' },
-            shield: { name: 'SHIELD', color: '#4CAF50', duration: 5000, icon: '🛡️' }
+            shield: { name: 'SHIELD', color: '#4CAF50', duration: 5000, icon: '🛡️' },
+            invincible: { name: 'INVINCIBLE', color: '#FF00FF', duration: 4000, icon: '⭐' },
+            magnet: { name: 'MAGNET', color: '#9932CC', duration: 8000, icon: '🧲' }
         };
 
         // ============================================
@@ -189,8 +194,9 @@
         let player = { x: 0, health: 100, maxHealth: 100, gun: 'pistol', mag: 12, reloading: false, reloadEnd: 0, lastShot: 0, recoil: 0 };
         let lobbyPlayer = { x: W / 2, y: H / 2 + 50, speed: 4 };
 
-        let zombies = [], crates = [], powerups = [], projectiles = [], particles = [], bloodSplats = [], activePets = [], hitMarkers = [];
+        let zombies = [], crates = [], powerups = [], projectiles = [], particles = [], bloodSplats = [], activePets = [], hitMarkers = [], grenades = [];
         let activePowerups = {};
+        let playerGrenades = 3;
 
         let muzzleFlash = 0, damageFlash = 0, screenShake = 0;
         let keys = {}, mouseX = centerX, mouseY = H / 2, mouseDown = false;
@@ -248,9 +254,12 @@
         // ENVIRONMENT
         // ============================================
         function getEnvironment() {
-            if (distance < 1500) return 'farm';
-            if (distance < 3000) return 'forest';
-            return 'city';
+            if (distance < 1000) return 'farm';
+            if (distance < 2000) return 'forest';
+            if (distance < 3000) return 'city';
+            if (distance < 4000) return 'desert';
+            if (distance < 4500) return 'snow';
+            return 'nuclear';
         }
 
         function drawSky() {
@@ -258,17 +267,26 @@
             const grad = ctx.createLinearGradient(0, 0, 0, horizon);
             if (env === 'farm') { grad.addColorStop(0, '#1a0a1a'); grad.addColorStop(1, '#3d1f3d'); }
             else if (env === 'forest') { grad.addColorStop(0, '#0a1a0a'); grad.addColorStop(1, '#1a3d1a'); }
-            else { grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(1, '#1a1a3d'); }
+            else if (env === 'city') { grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(1, '#1a1a3d'); }
+            else if (env === 'desert') { grad.addColorStop(0, '#2d1a0a'); grad.addColorStop(1, '#5c3d1a'); }
+            else if (env === 'snow') { grad.addColorStop(0, '#1a2a3d'); grad.addColorStop(1, '#3d5a7a'); }
+            else { grad.addColorStop(0, '#1a0a0a'); grad.addColorStop(1, '#3d1a1a'); } // nuclear - red tint
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, horizon);
-            ctx.fillStyle = '#ddd';
+            // Moon (or red sun for nuclear)
+            ctx.fillStyle = env === 'nuclear' ? '#ff3333' : '#ddd';
             ctx.beginPath(); ctx.arc(W - 100, 50, 30, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#fff';
+            if (env === 'nuclear') {
+                ctx.fillStyle = 'rgba(255,50,50,0.3)';
+                ctx.beginPath(); ctx.arc(W - 100, 50, 50, 0, Math.PI * 2); ctx.fill();
+            }
+            // Stars (or snow for snow env)
+            ctx.fillStyle = env === 'snow' ? '#fff' : '#fff';
             for (let i = 0; i < 50; i++) {
-                const x = (i * 73 + frame * 0.01) % W;
-                const y = (i * 29) % (horizon - 20) + 10;
-                ctx.globalAlpha = 0.3 + Math.sin(frame * 0.03 + i) * 0.3;
-                ctx.fillRect(x, y, 2, 2);
+                const x = (i * 73 + frame * (env === 'snow' ? 0.5 : 0.01)) % W;
+                const y = env === 'snow' ? ((i * 29 + frame * 2) % horizon) : (i * 29) % (horizon - 20) + 10;
+                ctx.globalAlpha = env === 'snow' ? 0.7 : 0.3 + Math.sin(frame * 0.03 + i) * 0.3;
+                ctx.fillRect(x, y, env === 'snow' ? 3 : 2, env === 'snow' ? 3 : 2);
             }
             ctx.globalAlpha = 1;
         }
@@ -293,7 +311,7 @@
                     const x = ((i * 55 + viewShift * 0.5) % (W + 100)) - 50;
                     ctx.beginPath(); ctx.moveTo(x, horizon); ctx.lineTo(x + 18, horizon - 50 - (i % 3) * 25); ctx.lineTo(x + 36, horizon); ctx.fill();
                 }
-            } else {
+            } else if (env === 'city') {
                 grad.addColorStop(0, '#2d2d2d'); grad.addColorStop(1, '#1a1a1a');
                 ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
                 ctx.fillStyle = '#0a0a0a';
@@ -301,11 +319,81 @@
                     const x = ((i * 65 + viewShift * 0.3) % (W + 100)) - 50;
                     const h = 60 + (i % 4) * 35;
                     ctx.fillRect(x, horizon - h, 55, h);
+                    // Windows
+                    ctx.fillStyle = '#ffff0030';
+                    for (let wy = 0; wy < h - 15; wy += 15) {
+                        ctx.fillRect(x + 10, horizon - h + wy + 5, 8, 8);
+                        ctx.fillRect(x + 35, horizon - h + wy + 5, 8, 8);
+                    }
+                    ctx.fillStyle = '#0a0a0a';
                 }
+            } else if (env === 'desert') {
+                grad.addColorStop(0, '#c4a35a'); grad.addColorStop(1, '#8b7355');
+                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
+                // Sand dunes
+                ctx.fillStyle = '#b8956e';
+                for (let i = 0; i < 10; i++) {
+                    const x = ((i * 120 + viewShift * 0.4) % (W + 200)) - 100;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 60, horizon);
+                    ctx.quadraticCurveTo(x, horizon - 40 - (i % 3) * 15, x + 60, horizon);
+                    ctx.fill();
+                }
+                // Cacti
+                ctx.fillStyle = '#2d5a27';
+                for (let i = 0; i < 8; i++) {
+                    const x = ((i * 150 + viewShift * 0.5) % (W + 150)) - 75;
+                    ctx.fillRect(x, horizon - 30, 8, 30);
+                    ctx.fillRect(x - 12, horizon - 20, 12, 6);
+                    ctx.fillRect(x + 8, horizon - 25, 10, 6);
+                }
+            } else if (env === 'snow') {
+                grad.addColorStop(0, '#e8e8e8'); grad.addColorStop(1, '#b8c8d8');
+                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
+                // Snow mounds
+                ctx.fillStyle = '#fff';
+                for (let i = 0; i < 15; i++) {
+                    const x = ((i * 80 + viewShift * 0.3) % (W + 160)) - 80;
+                    ctx.beginPath();
+                    ctx.arc(x, horizon + 10, 30 + (i % 3) * 10, Math.PI, 0);
+                    ctx.fill();
+                }
+                // Dead trees
+                ctx.fillStyle = '#4a3728';
+                for (let i = 0; i < 12; i++) {
+                    const x = ((i * 90 + viewShift * 0.4) % (W + 100)) - 50;
+                    ctx.fillRect(x, horizon - 40, 6, 40);
+                    ctx.fillRect(x - 15, horizon - 30, 15, 4);
+                    ctx.fillRect(x + 6, horizon - 35, 12, 4);
+                }
+            } else { // nuclear
+                grad.addColorStop(0, '#3d2d2d'); grad.addColorStop(1, '#2a1a1a');
+                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
+                // Destroyed buildings
+                ctx.fillStyle = '#1a1a1a';
+                for (let i = 0; i < 15; i++) {
+                    const x = ((i * 75 + viewShift * 0.3) % (W + 100)) - 50;
+                    const h = 30 + (i % 5) * 25;
+                    ctx.fillRect(x, horizon - h, 45, h);
+                    // Jagged top (destroyed)
+                    ctx.fillStyle = '#3d2d2d';
+                    ctx.beginPath();
+                    ctx.moveTo(x, horizon - h);
+                    ctx.lineTo(x + 15, horizon - h - 10);
+                    ctx.lineTo(x + 30, horizon - h + 5);
+                    ctx.lineTo(x + 45, horizon - h - 5);
+                    ctx.lineTo(x + 45, horizon - h);
+                    ctx.fill();
+                    ctx.fillStyle = '#1a1a1a';
+                }
+                // Radiation glow
+                ctx.fillStyle = `rgba(0,255,0,${0.05 + Math.sin(frame * 0.05) * 0.03})`;
+                ctx.fillRect(0, horizon, W, H - horizon);
             }
-            ctx.fillStyle = '#333';
+            // Road
+            ctx.fillStyle = env === 'snow' ? '#555' : env === 'nuclear' ? '#222' : '#333';
             ctx.beginPath(); ctx.moveTo(centerX - 50, horizon); ctx.lineTo(-200, H); ctx.lineTo(W + 200, H); ctx.lineTo(centerX + 50, horizon); ctx.fill();
-            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+            ctx.strokeStyle = env === 'snow' ? '#888' : '#ffd700'; ctx.lineWidth = 3;
             for (let i = 0; i < 15; i++) {
                 const t = (i * 0.07 + (frame * 0.02) % 0.07);
                 if (t < 0.04) continue;
@@ -356,6 +444,8 @@
             else if (z.type === 'boss') { headColor = '#2F4F4F'; bodyColor = '#1C1C1C'; }
             else if (z.type === 'fast') { headColor = '#7a9654'; }
             else if (z.type === 'tank') { headColor = '#4a6634'; }
+            else if (z.type === 'armored') { headColor = '#708090'; bodyColor = '#4a5568'; }
+            else if (z.type === 'shadow') { headColor = '#1a1a2e'; bodyColor = '#0a0a1a'; ctx.globalAlpha = 0.6 + Math.sin(frame * 0.2 + z.id) * 0.2; }
 
             // Crawler is low
             if (z.type === 'crawler') {
@@ -385,17 +475,48 @@
                     ctx.fillStyle = `rgba(255,100,0,${0.3 + Math.sin(frame * 0.2) * 0.2})`;
                     ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.3, 0, Math.PI * 2); ctx.fill();
                 }
+
+                // Armored has helmet
+                if (z.type === 'armored') {
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(-size * 0.2, -size * 0.95, size * 0.4, size * 0.15);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(-size * 0.22, -size * 0.85, size * 0.44, size * 0.08);
+                    // Shoulder pads
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(-size * 0.3, -size * 0.55, size * 0.12, size * 0.15);
+                    ctx.fillRect(size * 0.18, -size * 0.55, size * 0.12, size * 0.15);
+                }
+
+                // Shadow has ghostly aura
+                if (z.type === 'shadow') {
+                    ctx.fillStyle = `rgba(100,0,150,${0.3 + Math.sin(frame * 0.15 + z.id * 10) * 0.2})`;
+                    ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.5, 0, Math.PI * 2); ctx.fill();
+                }
+
+                // Burning effect
+                if (z.burning && z.burning > 0) {
+                    ctx.fillStyle = `rgba(255,100,0,${0.4 + Math.sin(frame * 0.3) * 0.2})`;
+                    ctx.beginPath(); ctx.arc(0, -size * 0.4, size * 0.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#ff4500';
+                    for (let f = 0; f < 3; f++) {
+                        const fx = (Math.random() - 0.5) * size * 0.4;
+                        const fy = -size * 0.2 - Math.random() * size * 0.5;
+                        ctx.beginPath(); ctx.arc(fx, fy, size * 0.1, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
             }
 
             // Eyes
-            ctx.fillStyle = z.type === 'boss' ? '#FF0000' : '#ff0000';
-            ctx.shadowColor = '#ff0000'; ctx.shadowBlur = size * 0.15;
+            ctx.fillStyle = z.type === 'boss' ? '#FF0000' : z.type === 'shadow' ? '#9932CC' : '#ff0000';
+            ctx.shadowColor = z.type === 'shadow' ? '#9932CC' : '#ff0000'; ctx.shadowBlur = size * 0.15;
             const eyeY = z.type === 'crawler' ? -size * 0.28 : -size * 0.8;
             ctx.fillRect(-size * 0.1, eyeY, size * 0.08, size * 0.08);
             ctx.fillRect(size * 0.02, eyeY, size * 0.08, size * 0.08);
             ctx.shadowBlur = 0;
 
             ctx.restore();
+            ctx.globalAlpha = 1;
 
             // Health bar for boss/tank
             if ((z.type === 'boss' || z.type === 'tank') && size > 30) {
@@ -422,14 +543,17 @@
             if (size < 6 || screenX < -50 || screenX > W + 50) return;
             c.screenX = screenX; c.screenY = screenY; c.screenSize = size;
 
-            ctx.fillStyle = c.type === 'gold' ? 'rgba(255,215,0,0.4)' : c.type === 'health' ? 'rgba(0,255,0,0.4)' : 'rgba(100,150,255,0.4)';
+            const crateColors = { gold: 'rgba(255,215,0,0.4)', health: 'rgba(0,255,0,0.4)', ammo: 'rgba(100,150,255,0.4)', grenade: 'rgba(45,90,39,0.4)' };
+            const crateBoxColors = { gold: '#ffd700', health: '#4CAF50', ammo: '#2196F3', grenade: '#2d5a27' };
+            const crateIcons = { gold: '$', health: '+', ammo: '•', grenade: '💣' };
+            ctx.fillStyle = crateColors[c.type] || crateColors.ammo;
             ctx.beginPath(); ctx.arc(screenX, screenY - size/2, size * 1.8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = c.type === 'gold' ? '#ffd700' : c.type === 'health' ? '#4CAF50' : '#2196F3';
+            ctx.fillStyle = crateBoxColors[c.type] || crateBoxColors.ammo;
             ctx.fillRect(screenX - size/2, screenY - size, size, size);
             ctx.fillStyle = 'rgba(255,255,255,0.3)';
             ctx.fillRect(screenX - size/2, screenY - size, size * 0.3, size);
             ctx.fillStyle = '#fff'; ctx.font = `bold ${size * 0.7}px Arial`; ctx.textAlign = 'center';
-            ctx.fillText(c.type === 'gold' ? '$' : c.type === 'health' ? '+' : '•', screenX, screenY - size * 0.3);
+            ctx.fillText(crateIcons[c.type] || '•', screenX, screenY - size * 0.3);
         }
 
         function drawPowerup(p) {
@@ -538,6 +662,9 @@
             else if (player.gun === 'rifle') { ctx.fillRect(-45, -130, 90, 35); ctx.fillRect(-32, -95, 64, 100); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-14, -70, 24, 45); }
             else if (player.gun === 'sniper') { ctx.fillRect(-40, -150, 80, 30); ctx.fillRect(-25, -120, 50, 125); ctx.fillStyle = '#3498db'; ctx.beginPath(); ctx.arc(0, -134, 9, 0, Math.PI * 2); ctx.fill(); }
             else if (player.gun === 'minigun') { ctx.fillRect(-50, -140, 100, 50); ctx.fillRect(-36, -90, 72, 95); }
+            else if (player.gun === 'rocket') { ctx.fillRect(-55, -145, 110, 45); ctx.fillRect(-35, -100, 70, 105); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-45, -130, 20, 30); ctx.fillRect(25, -130, 20, 30); }
+            else if (player.gun === 'flamethrower') { ctx.fillRect(-50, -140, 100, 40); ctx.fillRect(-35, -100, 70, 105); ctx.fillStyle = '#ff4500'; ctx.beginPath(); ctx.arc(0, -135, 15, 0, Math.PI * 2); ctx.fill(); }
+            else if (player.gun === 'laser') { ctx.fillRect(-45, -135, 90, 35); ctx.fillRect(-30, -100, 60, 105); ctx.fillStyle = '#00ffff'; ctx.fillRect(-8, -125, 16, 25); ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 15; ctx.fillRect(-8, -125, 16, 25); ctx.shadowBlur = 0; }
 
             if (muzzleFlash > 0) {
                 ctx.fillStyle = `rgba(255,200,50,${muzzleFlash})`;
@@ -605,6 +732,13 @@
             }
             ctx.font = '14px Courier New'; ctx.fillStyle = '#fff';
             ctx.fillText(GUNS[player.gun].name, W - 20, H - 42);
+
+            // Grenades
+            ctx.fillStyle = playerGrenades > 0 ? '#4CAF50' : '#666';
+            ctx.font = 'bold 18px Courier New'; ctx.textAlign = 'left';
+            ctx.fillText(`💣 ${playerGrenades}`, 20, H - 55);
+            ctx.fillStyle = '#888'; ctx.font = '12px Courier New';
+            ctx.fillText('[G]', 20, H - 70);
 
             // Active powerups
             let powerupX = W/2 - 100;
@@ -747,6 +881,16 @@
                         if (activePowerups.damage) damage *= 2;
                         if (isHeadshot) { damage *= 2; headshots++; playSound('headshot'); }
 
+                        // Armored zombies take 50% less damage (unless headshot)
+                        if (z.type === 'armored' && !isHeadshot) {
+                            damage *= 0.5;
+                        }
+
+                        // Flamethrower applies burn
+                        if (gun.burn) {
+                            z.burning = 180; // 3 seconds of burn
+                        }
+
                         z.health -= damage;
                         playSound('zombieHit');
                         hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.5, alpha: 1, headshot: isHeadshot });
@@ -759,18 +903,29 @@
                             });
                         }
 
+                        // Rocket launcher splash damage
+                        if (gun.splash) {
+                            playSound('explosion');
+                            screenShake = 8;
+                            zombies.forEach(oz => {
+                                if (oz !== z && Math.abs(oz.x - z.x) < gun.splash && Math.abs(oz.depth - z.depth) < 40) {
+                                    oz.health -= gun.damage * 0.5;
+                                }
+                            });
+                        }
+
                         if (z.health <= 0) {
                             playSound('zombieDie');
                             kills++;
                             let goldDrop = 5 + Math.floor(Math.random() * 12);
                             if (isHeadshot) goldDrop *= 2;
                             if (z.type === 'boss') goldDrop = 100 + Math.floor(Math.random() * 50);
+                            if (z.type === 'armored') goldDrop += 15;
 
                             // Exploder explodes on death
                             if (z.type === 'exploder') {
                                 playSound('explosion');
                                 screenShake = 10;
-                                // Damage nearby zombies
                                 zombies.forEach(oz => {
                                     if (oz !== z && Math.abs(oz.x - z.x) < 50 && Math.abs(oz.depth - z.depth) < 30) {
                                         oz.health -= 50;
@@ -782,7 +937,8 @@
 
                             crates.push({ x: z.x, depth: z.depth, type: 'gold', value: goldDrop });
                         }
-                        break;
+                        // Laser pierces through (don't break)
+                        if (!gun.pierce) break;
                     }
                 }
             }
@@ -803,6 +959,80 @@
             }
         }
 
+        function throwGrenade() {
+            if (playerGrenades <= 0) { playSound('empty'); return; }
+            playerGrenades--;
+            playSound('shoot');
+            // Calculate throw direction based on mouse position
+            const throwDepth = Math.max(50, 200 - (mouseY - horizon) * 0.8);
+            const throwX = player.x + (mouseX - centerX) * 0.3;
+            grenades.push({
+                x: player.x,
+                depth: 20,
+                targetX: throwX,
+                targetDepth: throwDepth,
+                progress: 0,
+                explodeTime: Date.now() + 1500
+            });
+        }
+
+        function updateGrenades() {
+            grenades.forEach(g => {
+                g.progress += 0.03;
+                g.x = player.x + (g.targetX - player.x) * g.progress;
+                g.depth = 20 + (g.targetDepth - 20) * g.progress;
+
+                if (Date.now() >= g.explodeTime || g.progress >= 1) {
+                    // Explode!
+                    playSound('explosion');
+                    screenShake = 12;
+                    // Damage all zombies in range
+                    zombies.forEach(z => {
+                        const dist = Math.abs(z.x - g.x) + Math.abs(z.depth - g.depth);
+                        if (dist < 100) {
+                            const dmg = 100 - dist;
+                            z.health -= dmg;
+                            if (z.health <= 0) {
+                                kills++;
+                                crates.push({ x: z.x, depth: z.depth, type: 'gold', value: 10 });
+                            }
+                        }
+                    });
+                    // Explosion particles
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: centerX + (g.x - player.x) * (200 / g.depth) * 3.5,
+                            y: horizon + (H - horizon) * (1 - g.depth / 200) * 1.5,
+                            vx: (Math.random() - 0.5) * 15,
+                            vy: (Math.random() - 0.5) * 15 - 5,
+                            size: 8 + Math.random() * 8,
+                            color: Math.random() > 0.5 ? '#ff4500' : '#ffd700',
+                            life: 1
+                        });
+                    }
+                    g.explodeTime = 0; // Mark for removal
+                }
+            });
+            grenades = grenades.filter(g => g.explodeTime > 0);
+        }
+
+        function drawGrenades() {
+            grenades.forEach(g => {
+                const scale = 200 / g.depth;
+                const screenX = centerX + (g.x - player.x) * scale * 3.5;
+                const screenY = horizon + (H - horizon) * (1 - g.depth / 200) * 1.5 - Math.sin(g.progress * Math.PI) * 50;
+                const size = 15 * scale;
+                if (size < 5) return;
+
+                // Grenade body
+                ctx.fillStyle = '#2d5a27';
+                ctx.beginPath(); ctx.arc(screenX, screenY, size, 0, Math.PI * 2); ctx.fill();
+                // Fuse glow
+                ctx.fillStyle = '#ff4500';
+                ctx.beginPath(); ctx.arc(screenX, screenY - size, size * 0.3, 0, Math.PI * 2); ctx.fill();
+            });
+        }
+
         // ============================================
         // SPAWNING
         // ============================================
@@ -820,20 +1050,25 @@
             let hp = 40 + distance / 45;
             let speed = 0.7 + Math.random() * 0.35;
             let zombieType = 'normal';
+            let armor = 0;
 
-            if (roll > 0.95 && distance > 2000) {
+            if (roll > 0.97 && distance > 3500) {
+                zombieType = 'shadow'; hp *= 0.6; speed *= 2.2;
+            } else if (roll > 0.94 && distance > 2500) {
+                zombieType = 'armored'; hp *= 2; speed *= 0.7; armor = 0.5;
+            } else if (roll > 0.91 && distance > 2000) {
                 zombieType = 'exploder'; hp *= 0.8;
-            } else if (roll > 0.88 && distance > 1500) {
+            } else if (roll > 0.85 && distance > 1500) {
                 zombieType = 'spitter'; hp *= 0.7; speed *= 0.5;
-            } else if (roll > 0.8 && distance > 1000) {
+            } else if (roll > 0.78 && distance > 1000) {
                 zombieType = 'crawler'; hp *= 0.6; speed *= 1.5;
-            } else if (roll > 0.92 && distance > 1500) {
+            } else if (roll > 0.9 && distance > 1500) {
                 zombieType = 'tank'; hp *= 3; speed *= 0.55;
-            } else if (roll > 0.75 && distance > 800) {
+            } else if (roll > 0.72 && distance > 800) {
                 zombieType = 'fast'; hp *= 0.5; speed *= 1.9;
             }
 
-            zombies.push({ id: Math.random(), x, depth, speed, health: hp, maxHealth: hp, type: zombieType, attackCD: 0, spitCD: 0 });
+            zombies.push({ id: Math.random(), x, depth, speed, health: hp, maxHealth: hp, type: zombieType, attackCD: 0, spitCD: 0, armor, teleportCD: 0 });
         }
 
         function spawnBoss() {
@@ -851,11 +1086,16 @@
         function spawnCrate() {
             if (Math.random() > 0.01) return;
             const type = Math.random();
+            let crateType, value;
+            if (type < 0.45) { crateType = 'gold'; value = 12 + Math.floor(Math.random() * 18); }
+            else if (type < 0.65) { crateType = 'ammo'; value = 1; }
+            else if (type < 0.85) { crateType = 'health'; value = 1; }
+            else { crateType = 'grenade'; value = 1; }
             crates.push({
                 x: player.x + (Math.random() - 0.5) * 150,
                 depth: 220 + Math.random() * 20,
-                type: type < 0.5 ? 'gold' : type < 0.75 ? 'ammo' : 'health',
-                value: type < 0.5 ? 12 + Math.floor(Math.random() * 18) : 1
+                type: crateType,
+                value: value
             });
         }
 
@@ -894,6 +1134,23 @@
                 z.depth -= z.speed;
                 z.x += (player.x - z.x) * 0.025;
 
+                // Shadow zombie teleports randomly
+                if (z.type === 'shadow') {
+                    z.teleportCD = (z.teleportCD || 0) - 1;
+                    if (z.teleportCD <= 0 && z.depth < 150 && z.depth > 40) {
+                        z.x += (Math.random() - 0.5) * 80;
+                        z.teleportCD = 60 + Math.random() * 60;
+                    }
+                }
+
+                // Burning damage over time
+                if (z.burning && z.burning > 0) {
+                    z.burning--;
+                    if (frame % 10 === 0) {
+                        z.health -= 3;
+                    }
+                }
+
                 // Check if boss died (from any source - pet, exploder, etc)
                 if (z.type === 'boss' && z.health <= 0 && bossActive) {
                     bossActive = null;
@@ -912,14 +1169,20 @@
                 // Attack
                 if (z.depth < 18 && Math.abs(z.x - player.x) < 35) {
                     if (z.attackCD <= 0) {
-                        let dmg = z.type === 'boss' ? 25 : z.type === 'tank' ? 20 : 12;
-                        if (activePowerups.shield) dmg = Math.floor(dmg * 0.3);
-                        player.health -= dmg;
-                        healthEl.textContent = Math.max(0, player.health);
-                        z.attackCD = z.type === 'boss' ? 30 : 45;
-                        damageFlash = 1; screenShake = 6;
-                        playSound('playerHit');
-                        if (player.health <= 0) gameOver();
+                        if (activePowerups.invincible) {
+                            // Invincible - no damage, but still knock back zombie
+                            z.depth += 10;
+                            z.attackCD = 30;
+                        } else {
+                            let dmg = z.type === 'boss' ? 25 : z.type === 'tank' ? 20 : 12;
+                            if (activePowerups.shield) dmg = Math.floor(dmg * 0.3);
+                            player.health -= dmg;
+                            healthEl.textContent = Math.max(0, player.health);
+                            z.attackCD = z.type === 'boss' ? 30 : 45;
+                            damageFlash = 1; screenShake = 6;
+                            playSound('playerHit');
+                            if (player.health <= 0) gameOver();
+                        }
                     }
                     z.attackCD--;
                 }
@@ -931,13 +1194,17 @@
             projectiles.forEach(p => {
                 p.depth -= p.speed;
                 if (p.depth < 20 && Math.abs(p.x - player.x) < 30) {
-                    let dmg = activePowerups.shield ? 5 : 15;
-                    player.health -= dmg;
-                    healthEl.textContent = Math.max(0, player.health);
-                    damageFlash = 0.5;
-                    playSound('playerHit');
-                    p.depth = -100;
-                    if (player.health <= 0) gameOver();
+                    if (activePowerups.invincible) {
+                        p.depth = -100; // destroy projectile but no damage
+                    } else {
+                        let dmg = activePowerups.shield ? 5 : 15;
+                        player.health -= dmg;
+                        healthEl.textContent = Math.max(0, player.health);
+                        damageFlash = 0.5;
+                        playSound('playerHit');
+                        p.depth = -100;
+                        if (player.health <= 0) gameOver();
+                    }
                 }
             });
             projectiles = projectiles.filter(p => p.depth > 5);
@@ -946,10 +1213,16 @@
         function updateCrates() {
             crates.forEach(c => {
                 c.depth -= 2;
-                if (c.depth < 22 && Math.abs(c.x - player.x) < 40) {
+                // Magnet attracts crates
+                if (activePowerups.magnet) {
+                    c.x += (player.x - c.x) * 0.1;
+                    if (c.depth > 30) c.depth -= 3;
+                }
+                if (c.depth < 22 && Math.abs(c.x - player.x) < (activePowerups.magnet ? 80 : 40)) {
                     if (c.type === 'gold') { runGold += c.value; goldEl.textContent = runGold; }
                     else if (c.type === 'health') { player.health = Math.min(player.maxHealth, player.health + 30); healthEl.textContent = player.health; }
                     else if (c.type === 'ammo') { player.mag = GUNS[player.gun].magSize; ammoEl.textContent = `${player.mag}/${GUNS[player.gun].magSize}`; }
+                    else if (c.type === 'grenade') { playerGrenades = Math.min(10, playerGrenades + 1); }
                     playSound('pickup');
                     c.value = 0;
                 }
@@ -1076,8 +1349,9 @@
                 mag: GUNS[saveData.equippedGun].magSize, reloading: false, reloadEnd: 0, lastShot: 0, recoil: 0
             };
 
-            zombies = []; crates = []; powerups = []; projectiles = []; particles = []; bloodSplats = []; hitMarkers = [];
+            zombies = []; crates = []; powerups = []; projectiles = []; particles = []; bloodSplats = []; hitMarkers = []; grenades = [];
             muzzleFlash = 0; damageFlash = 0; screenShake = 0;
+            playerGrenades = 3;
 
             activePets = [];
             saveData.activePets.forEach((petId, i) => {
@@ -1137,14 +1411,15 @@
                 updatePlayer();
                 if (mouseDown) shoot();
                 spawnZombie(); spawnCrate(); spawnPowerup();
-                updateZombies(); updateProjectiles(); updateCrates(); updatePowerups(); updatePets(); updateEffects();
+                updateZombies(); updateProjectiles(); updateCrates(); updatePowerups(); updatePets(); updateGrenades(); updateEffects();
 
                 const objects = [
                     ...zombies.map(z => ({ type: 'zombie', obj: z, depth: z.depth })),
                     ...crates.map(c => ({ type: 'crate', obj: c, depth: c.depth })),
                     ...powerups.map(p => ({ type: 'powerup', obj: p, depth: p.depth })),
                     ...projectiles.map(p => ({ type: 'projectile', obj: p, depth: p.depth })),
-                    ...activePets.map(p => ({ type: 'pet', obj: p, depth: p.depth }))
+                    ...activePets.map(p => ({ type: 'pet', obj: p, depth: p.depth })),
+                    ...grenades.map(g => ({ type: 'grenade', obj: g, depth: g.depth }))
                 ].sort((a, b) => b.depth - a.depth);
 
                 objects.forEach(o => {
@@ -1153,6 +1428,7 @@
                     else if (o.type === 'powerup') drawPowerup(o.obj);
                     else if (o.type === 'projectile') drawProjectile(o.obj);
                     else if (o.type === 'pet') drawPet(o.obj);
+                    else if (o.type === 'grenade') drawGrenades();
                 });
 
                 drawBlood(); drawHitMarkers(); drawParticles(); drawGun(); drawCrosshair(); drawRunHUD();
@@ -1169,7 +1445,7 @@
             if (gameMode === 'lobby') {
                 if (activeShop) {
                     if (e.key === 'Escape') activeShop = null;
-                    else if (e.key >= '1' && e.key <= '6') handleShopInput(e.key);
+                    else if (e.key >= '1' && e.key <= '9') handleShopInput(e.key);
                 } else if (e.key === ' ' || e.key === 'Enter') {
                     for (const shop of SHOPS) {
                         if (lobbyPlayer.x > shop.x && lobbyPlayer.x < shop.x + shop.w && lobbyPlayer.y > shop.y && lobbyPlayer.y < shop.y + shop.h) {
@@ -1181,6 +1457,7 @@
                 }
             } else if (gameMode === 'run') {
                 if (e.key === 'r' || e.key === 'R') startReload();
+                if (e.key === 'g' || e.key === 'G') throwGrenade();
             }
         });
         document.addEventListener('keyup', e => { keys[e.key] = false; });
