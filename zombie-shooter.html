@@ -908,6 +908,65 @@
             }
         }
 
+        // Draw mini gun icons for shop
+        function drawMiniGun(gunId, x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            const s = 0.5; // scale
+            ctx.fillStyle = GUNS[gunId].color;
+
+            if (gunId === 'pistol') {
+                // Small handgun
+                ctx.fillRect(-12*s, -8*s, 24*s, 10*s);
+                ctx.fillRect(-6*s, 2*s, 12*s, 14*s);
+            } else if (gunId === 'shotgun') {
+                // Long barrel with wood stock
+                ctx.fillRect(-20*s, -5*s, 40*s, 8*s);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(8*s, -3*s, 14*s, 12*s);
+            } else if (gunId === 'smg') {
+                // Compact with magazine
+                ctx.fillRect(-15*s, -6*s, 30*s, 8*s);
+                ctx.fillRect(-8*s, 2*s, 10*s, 12*s);
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(-3*s, 2*s, 6*s, 10*s);
+            } else if (gunId === 'rifle') {
+                // Long with scope
+                ctx.fillRect(-22*s, -5*s, 44*s, 8*s);
+                ctx.fillRect(6*s, -3*s, 16*s, 12*s);
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(-18*s, -10*s, 12*s, 6*s);
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(-12*s, -7*s, 3*s, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gunId === 'sniper') {
+                // Extra long with big scope
+                ctx.fillRect(-25*s, -4*s, 50*s, 6*s);
+                ctx.fillRect(12*s, -2*s, 14*s, 10*s);
+                ctx.fillStyle = '#111';
+                ctx.fillRect(-20*s, -12*s, 16*s, 8*s);
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(-12*s, -8*s, 4*s, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gunId === 'minigun') {
+                // Multiple barrels
+                ctx.fillRect(-18*s, -8*s, 36*s, 14*s);
+                ctx.fillStyle = '#555';
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillRect(-22*s, -6*s + i*5*s, 8*s, 3*s);
+                }
+                ctx.fillStyle = '#666';
+                ctx.beginPath();
+                ctx.arc(12*s, -1*s, 8*s, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
         function drawShopMenu() {
             if (!activeShop) return;
 
@@ -954,14 +1013,19 @@
                 ctx.lineWidth = 2;
                 ctx.strokeRect(px + 20, itemY, pw - 40, 45);
 
-                // Icon
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'left';
-                ctx.fillText(activeShop === 'gun' ? '🔫' : item.icon, px + 35, itemY + 32);
+                // Icon - draw actual gun shapes or pet emoji
+                if (activeShop === 'gun') {
+                    drawMiniGun(id, px + 45, itemY + 22);
+                } else {
+                    ctx.font = '24px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(item.icon, px + 35, itemY + 32);
+                }
 
                 // Name
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 16px Courier New';
+                ctx.textAlign = 'left';
                 ctx.fillText(item.name, px + 70, itemY + 28);
 
                 // Stats
