@@ -496,10 +496,10 @@
                 y: 40,
                 width: 160,
                 height: 60,
-                health: 20 + wave * 5,
-                maxHealth: 20 + wave * 5,
+                health: 12 + wave * 3,
+                maxHealth: 12 + wave * 3,
                 direction: 1,
-                speed: 2,
+                speed: 1.5,
                 shootTimer: 0,
                 phase: 1
             };
@@ -557,7 +557,7 @@
 
             // Shooting patterns
             boss.shootTimer++;
-            const shootRate = boss.health < boss.maxHealth * 0.5 ? 20 : 40; // Faster when damaged
+            const shootRate = boss.health < boss.maxHealth * 0.5 ? 35 : 55; // Slower shooting
 
             if (boss.shootTimer >= shootRate) {
                 boss.shootTimer = 0;
