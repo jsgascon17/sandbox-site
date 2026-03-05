@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Last Run - Zombie Survival</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Courier New', monospace;
-            background: #000;
+            font-family: 'Rajdhani', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a1a 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -17,24 +19,162 @@
             padding: 20px;
             overflow: hidden;
         }
-        h1 { font-size: 2rem; color: #e94560; text-shadow: 3px 3px 0 #000; margin-bottom: 10px; letter-spacing: 2px; }
-        .hud { display: flex; gap: 20px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
-        .hud-item { background: rgba(0, 0, 0, 0.7); padding: 8px 15px; border-radius: 5px; color: #fff; border: 2px solid #e94560; }
-        .hud-item span { color: #ffd700; font-weight: bold; }
-        #gameCanvas { border: 4px solid #e94560; border-radius: 10px; box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3); cursor: none; }
-        .instructions { margin-top: 15px; color: #aaa; font-size: 0.9rem; text-align: center; }
-        .instructions span { background: #333; padding: 5px 10px; border-radius: 5px; border: 1px solid #e94560; color: #fff; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            color: #e94560;
+            text-shadow: 0 0 10px #e94560, 0 0 20px #e94560, 3px 3px 0 #000;
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { text-shadow: 0 0 10px #e94560, 0 0 20px #e94560, 3px 3px 0 #000; }
+            50% { text-shadow: 0 0 20px #e94560, 0 0 40px #e94560, 3px 3px 0 #000; }
+        }
+
+        .hud { display: flex; gap: 15px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
+        .hud-item {
+            background: linear-gradient(180deg, rgba(20,20,30,0.9) 0%, rgba(10,10,15,0.95) 100%);
+            padding: 10px 18px;
+            border-radius: 8px;
+            color: #fff;
+            border: 2px solid #e94560;
+            box-shadow: 0 0 15px rgba(233,69,96,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .hud-item span { color: #ffd700; font-weight: bold; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+
+        #gameCanvas {
+            border: 3px solid #e94560;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(233,69,96,0.4), 0 0 60px rgba(233,69,96,0.2), inset 0 0 50px rgba(0,0,0,0.5);
+            cursor: none;
+        }
+
+        .instructions { margin-top: 15px; color: #888; font-size: 0.95rem; text-align: center; }
+        .instructions span {
+            background: linear-gradient(180deg, #2a2a3a 0%, #1a1a2a 100%);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #e94560;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-weight: 600;
+        }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, rgba(20,10,15,0.95) 0%, rgba(0,0,0,0.98) 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px);
+        }
         .overlay.hidden { display: none; }
-        .overlay h2 { font-size: 2.5rem; color: #e94560; text-shadow: 3px 3px 0 #000; margin-bottom: 20px; }
-        .overlay p { color: #fff; margin-bottom: 10px; font-size: 1.1rem; }
-        .btn { padding: 15px 40px; font-size: 1.2rem; font-family: 'Courier New', monospace; background: linear-gradient(to bottom, #e94560, #c73e54); color: #fff; border: 3px solid #a02040; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 5px 0 #a02040; transition: all 0.1s; margin: 5px; }
-        .btn:hover { transform: translateY(2px); box-shadow: 0 3px 0 #a02040; }
-        .btn.gold { background: linear-gradient(to bottom, #ffd700, #cc9900); border-color: #996600; box-shadow: 0 5px 0 #996600; }
-        .leaderboard { background: rgba(0,0,0,0.8); border: 2px solid #ffd700; border-radius: 10px; padding: 15px; margin: 15px 0; max-width: 300px; }
-        .leaderboard h3 { color: #ffd700; margin-bottom: 10px; text-align: center; }
-        .leaderboard-entry { display: flex; justify-content: space-between; color: #fff; padding: 5px 0; border-bottom: 1px solid #333; }
-        .leaderboard-entry.highlight { color: #4CAF50; font-weight: bold; }
+        .overlay h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            color: #e94560;
+            text-shadow: 0 0 20px #e94560, 0 0 40px #e94560, 4px 4px 0 #000;
+            margin-bottom: 25px;
+            letter-spacing: 3px;
+        }
+        .overlay p { color: #ccc; margin-bottom: 12px; font-size: 1.15rem; font-weight: 500; }
+
+        .btn {
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            background: linear-gradient(180deg, #ff4d6d 0%, #e94560 30%, #c73e54 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 6px 0 #8a2035, 0 8px 20px rgba(233,69,96,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: all 0.15s ease;
+            margin: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .btn:hover::before { left: 100%; }
+        .btn:hover {
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #8a2035, 0 5px 15px rgba(233,69,96,0.5);
+            background: linear-gradient(180deg, #ff6b85 0%, #f05070 30%, #d84860 100%);
+        }
+        .btn:active { transform: translateY(5px); box-shadow: 0 1px 0 #8a2035; }
+
+        .btn.gold {
+            background: linear-gradient(180deg, #ffdd44 0%, #ffd700 30%, #cc9900 100%);
+            box-shadow: 0 6px 0 #806000, 0 8px 20px rgba(255,215,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            color: #1a1a1a;
+        }
+        .btn.gold:hover {
+            box-shadow: 0 3px 0 #806000, 0 5px 15px rgba(255,215,0,0.5);
+            background: linear-gradient(180deg, #ffee66 0%, #ffe033 30%, #ddaa00 100%);
+        }
+
+        .btn.green {
+            background: linear-gradient(180deg, #5dff5d 0%, #4CAF50 30%, #388E3C 100%);
+            box-shadow: 0 6px 0 #1B5E20, 0 8px 20px rgba(76,175,80,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .btn.green:hover {
+            box-shadow: 0 3px 0 #1B5E20, 0 5px 15px rgba(76,175,80,0.5);
+        }
+
+        .leaderboard {
+            background: linear-gradient(180deg, rgba(30,25,20,0.95) 0%, rgba(15,12,10,0.98) 100%);
+            border: 2px solid #ffd700;
+            border-radius: 12px;
+            padding: 18px;
+            margin: 18px 0;
+            max-width: 320px;
+            box-shadow: 0 0 20px rgba(255,215,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .leaderboard h3 {
+            font-family: 'Orbitron', monospace;
+            color: #ffd700;
+            margin-bottom: 12px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+            font-size: 1.1rem;
+        }
+        .leaderboard-entry {
+            display: flex; justify-content: space-between;
+            color: #ddd;
+            padding: 8px 5px;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            font-weight: 500;
+        }
+        .leaderboard-entry.highlight { color: #4CAF50; font-weight: bold; text-shadow: 0 0 8px rgba(76,175,80,0.5); }
+
+        #soundBtn {
+            background: linear-gradient(180deg, #3a3a4a 0%, #2a2a3a 100%) !important;
+            border: 2px solid #e94560 !important;
+            color: #fff !important;
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        #soundBtn:hover {
+            background: linear-gradient(180deg, #4a4a5a 0%, #3a3a4a 100%) !important;
+            box-shadow: 0 0 10px rgba(233,69,96,0.4);
+        }
     </style>
 </head>
 <body>
@@ -137,9 +277,14 @@
         function loadSave() {
             try {
                 const data = JSON.parse(localStorage.getItem('lastRunSave'));
-                if (data) return data;
+                if (data) {
+                    // Ensure new properties exist
+                    if (!data.perks) data.perks = [];
+                    if (!data.gunUpgrades) data.gunUpgrades = {};
+                    return data;
+                }
             } catch(e) {}
-            return { gold: 50, ownedGuns: ['pistol'], equippedGun: 'pistol', ownedPets: [], activePets: [], bestDistance: 0 };
+            return { gold: 50, ownedGuns: ['pistol'], equippedGun: 'pistol', ownedPets: [], activePets: [], bestDistance: 0, perks: [], gunUpgrades: {} };
         }
         function saveSave() { localStorage.setItem('lastRunSave', JSON.stringify(saveData)); }
         let saveData = loadSave();
@@ -201,6 +346,29 @@
         let muzzleFlash = 0, damageFlash = 0, screenShake = 0;
         let keys = {}, mouseX = centerX, mouseY = H / 2, mouseDown = false;
 
+        // NEW SYSTEMS
+        let combo = 0, comboTimer = 0, maxCombo = 0;
+        let killstreak = 0, killstreakTimer = 0;
+        let critFlash = 0;
+        let weatherParticles = [];
+        let deadZombies = []; // For death animations
+        let dangerIndicators = [];
+        let laserBeams = [], fireParticles = [], rocketTrails = [];
+
+        // PERKS SYSTEM
+        const PERKS = {
+            secondWind: { name: 'Second Wind', desc: 'Revive once per run with 30 HP', price: 500, icon: '💀' },
+            goldRush: { name: 'Gold Rush', desc: '+25% gold from kills', price: 300, icon: '💰' },
+            thickSkin: { name: 'Thick Skin', desc: '+25 max HP', price: 400, icon: '🛡️' },
+            quickHands: { name: 'Quick Hands', desc: '30% faster reload', price: 350, icon: '🤲' },
+            deadEye: { name: 'Dead Eye', desc: '+15% crit chance', price: 450, icon: '🎯' },
+            scavenger: { name: 'Scavenger', desc: 'More ammo from pickups', price: 250, icon: '🔋' }
+        };
+
+        // GUN UPGRADES
+        const GUN_UPGRADE_COSTS = { damage: 100, fireRate: 80, magSize: 60 };
+        const GUN_UPGRADE_MAX = 5;
+
         const distanceEl = document.getElementById('distance');
         const goldEl = document.getElementById('gold');
         const healthEl = document.getElementById('health');
@@ -208,9 +376,11 @@
         const ammoEl = document.getElementById('ammo');
 
         const SHOPS = [
-            { id: 'gun', name: 'GUN SHOP', x: 200, y: 200, w: 180, h: 120, color: '#e94560', icon: '🔫' },
-            { id: 'pet', name: 'PET SHOP', x: W - 380, y: 200, w: 180, h: 120, color: '#4CAF50', icon: '🐾' },
-            { id: 'start', name: 'START RUN', x: W/2 - 100, y: H - 180, w: 200, h: 100, color: '#ffd700', icon: '🏃' }
+            { id: 'gun', name: 'ARMORY', x: 120, y: 150, w: 160, h: 100, color: '#e94560', icon: '🔫' },
+            { id: 'upgrade', name: 'UPGRADES', x: 320, y: 150, w: 160, h: 100, color: '#00bfff', icon: '⚡' },
+            { id: 'pet', name: 'PETS', x: W - 480, y: 150, w: 160, h: 100, color: '#4CAF50', icon: '🐾' },
+            { id: 'perk', name: 'PERKS', x: W - 280, y: 150, w: 160, h: 100, color: '#9932CC', icon: '✨' },
+            { id: 'start', name: 'START RUN', x: W/2 - 100, y: H - 150, w: 200, h: 90, color: '#ffd700', icon: '🏃' }
         ];
         let activeShop = null;
 
@@ -632,21 +802,136 @@
         function drawHitMarkers() {
             hitMarkers.forEach(h => {
                 ctx.globalAlpha = h.alpha;
-                ctx.strokeStyle = h.headshot ? '#FFD700' : '#fff';
-                ctx.lineWidth = h.headshot ? 3 : 2;
-                const s = h.headshot ? 15 : 10;
+                ctx.strokeStyle = h.crit ? '#ff00ff' : h.headshot ? '#FFD700' : '#fff';
+                ctx.lineWidth = h.crit ? 4 : h.headshot ? 3 : 2;
+                const s = h.crit ? 18 : h.headshot ? 15 : 10;
                 ctx.beginPath();
                 ctx.moveTo(h.x - s, h.y - s); ctx.lineTo(h.x - s/2, h.y - s/2);
                 ctx.moveTo(h.x + s, h.y - s); ctx.lineTo(h.x + s/2, h.y - s/2);
                 ctx.moveTo(h.x - s, h.y + s); ctx.lineTo(h.x - s/2, h.y + s/2);
                 ctx.moveTo(h.x + s, h.y + s); ctx.lineTo(h.x + s/2, h.y + s/2);
                 ctx.stroke();
-                if (h.headshot) {
-                    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 14px Courier New'; ctx.textAlign = 'center';
+                if (h.secondWind) {
+                    ctx.fillStyle = '#4CAF50'; ctx.font = 'bold 28px Orbitron'; ctx.textAlign = 'center';
+                    ctx.shadowColor = '#4CAF50'; ctx.shadowBlur = 20;
+                    ctx.fillText('SECOND WIND!', h.x, h.y);
+                    ctx.shadowBlur = 0;
+                } else if (h.crit) {
+                    ctx.fillStyle = '#ff00ff'; ctx.font = 'bold 16px Orbitron'; ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = 10;
+                    ctx.fillText('CRITICAL!', h.x, h.y - 25);
+                    ctx.shadowBlur = 0;
+                } else if (h.headshot) {
+                    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 14px Orbitron'; ctx.textAlign = 'center';
                     ctx.fillText('HEADSHOT!', h.x, h.y - 20);
                 }
             });
             ctx.globalAlpha = 1;
+        }
+
+        function drawWeaponEffects() {
+            // Laser beams
+            laserBeams.forEach(l => {
+                ctx.globalAlpha = l.alpha;
+                ctx.strokeStyle = '#00ffff';
+                ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 20;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(l.x1, l.y1);
+                ctx.lineTo(l.x2, l.y2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            });
+            ctx.globalAlpha = 1;
+
+            // Fire particles
+            fireParticles.forEach(f => {
+                ctx.globalAlpha = f.life;
+                const gradient = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size);
+                gradient.addColorStop(0, '#ffff00');
+                gradient.addColorStop(0.5, '#ff6600');
+                gradient.addColorStop(1, 'rgba(255,0,0,0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // Rocket trails
+            rocketTrails.forEach(r => {
+                const x = r.x + (r.targetX - r.x) * r.progress;
+                const y = r.y + (r.targetY - r.y) * r.progress;
+                ctx.fillStyle = '#ff4500';
+                ctx.shadowColor = '#ff4500'; ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                // Trail
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(r.x, r.y);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function drawDeadZombies() {
+            deadZombies.forEach(d => {
+                ctx.globalAlpha = d.alpha;
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rotation);
+                ctx.fillStyle = d.type === 'boss' ? '#1C1C1C' : '#4a5568';
+                ctx.fillRect(-d.size * 0.2, -d.size * 0.5, d.size * 0.4, d.size * 0.6);
+                ctx.fillStyle = d.type === 'boss' ? '#2F4F4F' : '#5f9654';
+                ctx.fillRect(-d.size * 0.15, -d.size * 0.8, d.size * 0.3, d.size * 0.3);
+                ctx.restore();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawWeather() {
+            const env = getEnvironment();
+            weatherParticles.forEach(w => {
+                if (w.type === 'rain') {
+                    ctx.strokeStyle = 'rgba(150,180,255,0.6)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(w.x, w.y);
+                    ctx.lineTo(w.x + w.vx * 2, w.y + w.vy * 2);
+                    ctx.stroke();
+                } else if (w.type === 'snow') {
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    ctx.beginPath();
+                    ctx.arc(w.x, w.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (w.type === 'sand') {
+                    ctx.fillStyle = 'rgba(210,180,140,0.5)';
+                    ctx.beginPath();
+                    ctx.arc(w.x, w.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (w.type === 'ash') {
+                    ctx.fillStyle = 'rgba(100,100,100,0.6)';
+                    ctx.beginPath();
+                    ctx.arc(w.x, w.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Environment overlay
+            if (env === 'desert') {
+                ctx.fillStyle = 'rgba(210,180,140,0.05)';
+                ctx.fillRect(0, 0, W, H);
+            } else if (env === 'snow') {
+                ctx.fillStyle = 'rgba(200,220,255,0.08)';
+                ctx.fillRect(0, 0, W, H);
+            } else if (env === 'nuclear') {
+                ctx.fillStyle = `rgba(0,255,0,${0.02 + Math.sin(frame * 0.02) * 0.01})`;
+                ctx.fillRect(0, 0, W, H);
+            }
         }
 
         function drawGun() {
@@ -692,76 +977,185 @@
         }
 
         function drawRunHUD() {
-            // Progress bar
+            const gun = getGunStats(player.gun);
+
+            // Progress bar with glow
             const prog = distance / 5000;
-            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(10, 10, W - 20, 22);
-            ctx.fillStyle = '#4CAF50'; ctx.fillRect(10, 10, (W - 20) * prog, 22);
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(10, 8, W - 20, 26);
+            const progGrad = ctx.createLinearGradient(10, 0, 10 + (W-20) * prog, 0);
+            progGrad.addColorStop(0, '#2ecc71');
+            progGrad.addColorStop(1, '#27ae60');
+            ctx.fillStyle = progGrad;
+            ctx.fillRect(12, 10, Math.max(0, (W - 24) * prog), 22);
+
+            // Boss markers
             ctx.fillStyle = '#e94560';
             for (let i = 1000; i <= 5000; i += 1000) {
                 const x = 10 + (W - 20) * (i / 5000);
-                ctx.fillRect(x - 3, 6, 6, 30);
-                ctx.fillStyle = '#fff'; ctx.font = '10px Courier New'; ctx.textAlign = 'center';
-                ctx.fillText('BOSS', x, 42);
+                ctx.shadowColor = '#e94560'; ctx.shadowBlur = 8;
+                ctx.fillRect(x - 2, 5, 4, 32);
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 9px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText('BOSS', x, 45);
                 ctx.fillStyle = '#e94560';
             }
 
-            ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Courier New'; ctx.textAlign = 'left';
-            ctx.fillText(`${distance}m`, 20, 26);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Orbitron'; ctx.textAlign = 'left';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+            ctx.fillText(`${distance}m`, 20, 27);
+            ctx.shadowBlur = 0;
 
-            // Health bar
-            ctx.fillStyle = '#333'; ctx.fillRect(18, H - 40, 200, 22);
+            // COMBO DISPLAY
+            if (combo > 0) {
+                const comboScale = 1 + Math.sin(frame * 0.2) * 0.1;
+                ctx.save();
+                ctx.translate(W/2, 80);
+                ctx.scale(comboScale, comboScale);
+                ctx.font = 'bold 32px Orbitron';
+                ctx.textAlign = 'center';
+                const comboColor = combo >= 20 ? '#ff00ff' : combo >= 10 ? '#ffd700' : combo >= 5 ? '#ff4500' : '#fff';
+                ctx.fillStyle = comboColor;
+                ctx.shadowColor = comboColor; ctx.shadowBlur = 15;
+                ctx.fillText(`${combo}x COMBO`, 0, 0);
+                ctx.shadowBlur = 0;
+                ctx.font = '14px Rajdhani'; ctx.fillStyle = '#aaa';
+                const mult = Math.min(4, 1 + Math.floor(combo / 5) * 0.5);
+                ctx.fillText(`+${Math.floor((mult - 1) * 100)}% Gold`, 0, 20);
+                ctx.restore();
+            }
+
+            // KILLSTREAK DISPLAY
+            if (killstreak >= 5) {
+                ctx.font = 'bold 18px Rajdhani'; ctx.textAlign = 'right';
+                ctx.fillStyle = killstreak >= 25 ? '#ffd700' : killstreak >= 10 ? '#ff4500' : '#fff';
+                ctx.fillText(`🔥 ${killstreak} STREAK`, W - 20, 70);
+                if (killstreak >= 10 && killstreak < 25) {
+                    ctx.font = '12px Rajdhani'; ctx.fillStyle = '#888';
+                    ctx.fillText(`${25 - killstreak} to instant reload`, W - 20, 85);
+                }
+            }
+
+            // Health bar (improved)
+            const hpBarW = 220, hpBarH = 28;
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(15, H - 45, hpBarW + 4, hpBarH + 4);
             const hp = player.health / player.maxHealth;
-            ctx.fillStyle = hp > 0.5 ? '#4CAF50' : hp > 0.25 ? '#ff9800' : '#f44336';
-            if (activePowerups.shield) ctx.fillStyle = '#00BFFF';
-            ctx.fillRect(18, H - 40, 200 * hp, 22);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(18, H - 40, 200, 22);
-            ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Courier New';
-            ctx.fillText(`HP: ${player.health}/${player.maxHealth}`, 25, H - 24);
+            const hpGrad = ctx.createLinearGradient(17, 0, 17 + hpBarW * hp, 0);
+            if (hp > 0.5) { hpGrad.addColorStop(0, '#2ecc71'); hpGrad.addColorStop(1, '#27ae60'); }
+            else if (hp > 0.25) { hpGrad.addColorStop(0, '#f39c12'); hpGrad.addColorStop(1, '#e67e22'); }
+            else { hpGrad.addColorStop(0, '#e74c3c'); hpGrad.addColorStop(1, '#c0392b'); }
+            if (activePowerups.shield) { hpGrad.addColorStop(0, '#3498db'); hpGrad.addColorStop(1, '#2980b9'); }
+            if (activePowerups.invincible) { hpGrad.addColorStop(0, '#9b59b6'); hpGrad.addColorStop(1, '#8e44ad'); }
+            ctx.fillStyle = hpGrad;
+            ctx.fillRect(17, H - 43, hpBarW * hp, hpBarH);
 
-            // Ammo / Reload
-            ctx.textAlign = 'right'; ctx.font = 'bold 22px Courier New';
+            // HP pulse when low
+            if (hp <= 0.25 && Math.sin(frame * 0.2) > 0) {
+                ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 3;
+                ctx.strokeRect(15, H - 45, hpBarW + 4, hpBarH + 4);
+            }
+
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'left';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+            ctx.fillText(`❤️ ${Math.ceil(player.health)}/${player.maxHealth}`, 22, H - 24);
+            ctx.shadowBlur = 0;
+
+            // Ammo / Reload (improved)
+            ctx.textAlign = 'right';
             if (player.reloading) {
                 const reloadProg = 1 - (player.reloadEnd - Date.now()) / GUNS[player.gun].reloadTime;
-                ctx.fillStyle = '#ff9800';
-                ctx.fillText(`RELOADING...`, W - 20, H - 22);
-                ctx.fillStyle = '#333'; ctx.fillRect(W - 120, H - 55, 100, 8);
-                ctx.fillStyle = '#ff9800'; ctx.fillRect(W - 120, H - 55, 100 * reloadProg, 8);
+                ctx.fillStyle = '#ff9800'; ctx.font = 'bold 20px Orbitron';
+                ctx.fillText(`RELOADING`, W - 20, H - 25);
+                ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(W - 140, H - 55, 120, 10);
+                ctx.fillStyle = '#ff9800'; ctx.fillRect(W - 140, H - 55, 120 * reloadProg, 10);
             } else {
-                ctx.fillStyle = player.mag <= GUNS[player.gun].magSize * 0.2 ? '#f44336' : '#fff';
-                ctx.fillText(`${player.mag}/${GUNS[player.gun].magSize}`, W - 20, H - 22);
+                const lowAmmo = player.mag <= gun.magSize * 0.2;
+                ctx.fillStyle = lowAmmo ? '#e74c3c' : '#fff';
+                ctx.font = `bold ${lowAmmo ? 26 : 24}px Orbitron`;
+                ctx.shadowColor = lowAmmo ? '#e74c3c' : '#000'; ctx.shadowBlur = lowAmmo ? 10 : 3;
+                ctx.fillText(`${player.mag}/${Math.ceil(gun.magSize)}`, W - 20, H - 22);
+                ctx.shadowBlur = 0;
             }
-            ctx.font = '14px Courier New'; ctx.fillStyle = '#fff';
-            ctx.fillText(GUNS[player.gun].name, W - 20, H - 42);
+            ctx.font = 'bold 16px Rajdhani'; ctx.fillStyle = '#aaa';
+            ctx.fillText(GUNS[player.gun].name.toUpperCase(), W - 20, H - 45);
 
-            // Grenades
-            ctx.fillStyle = playerGrenades > 0 ? '#4CAF50' : '#666';
-            ctx.font = 'bold 18px Courier New'; ctx.textAlign = 'left';
-            ctx.fillText(`💣 ${playerGrenades}`, 20, H - 55);
-            ctx.fillStyle = '#888'; ctx.font = '12px Courier New';
-            ctx.fillText('[G]', 20, H - 70);
+            // Grenades (improved)
+            ctx.textAlign = 'left';
+            ctx.fillStyle = playerGrenades > 0 ? '#4CAF50' : '#555';
+            ctx.font = 'bold 20px Rajdhani';
+            ctx.fillText(`💣 ${playerGrenades}`, 18, H - 60);
+            ctx.fillStyle = '#666'; ctx.font = '11px Rajdhani';
+            ctx.fillText('[G]', 18, H - 75);
 
-            // Active powerups
-            let powerupX = W/2 - 100;
+            // Gold display
+            ctx.fillStyle = '#ffd700'; ctx.font = 'bold 18px Rajdhani';
+            ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 5;
+            ctx.fillText(`💰 ${runGold}`, 18, H - 95);
+            ctx.shadowBlur = 0;
+
+            // Active powerups (improved)
+            let powerupX = W/2 - 120;
             Object.entries(activePowerups).forEach(([type, endTime]) => {
                 const remaining = Math.max(0, (endTime - Date.now()) / 1000).toFixed(1);
                 const ptype = POWERUP_TYPES[type];
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(powerupX - 35, 52, 70, 30);
                 ctx.fillStyle = ptype.color;
-                ctx.font = 'bold 16px Courier New'; ctx.textAlign = 'center';
-                ctx.fillText(`${ptype.icon} ${remaining}s`, powerupX, 55);
+                ctx.shadowColor = ptype.color; ctx.shadowBlur = 8;
+                ctx.font = 'bold 14px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText(`${ptype.icon} ${remaining}s`, powerupX, 72);
+                ctx.shadowBlur = 0;
                 powerupX += 80;
             });
 
+            // Screen effects
             // Damage flash
             if (damageFlash > 0) {
                 ctx.fillStyle = `rgba(255,0,0,${damageFlash * 0.4})`;
                 ctx.fillRect(0, 0, W, H);
             }
 
-            // Boss warning
-            if (bossActive) {
-                ctx.fillStyle = `rgba(255,0,0,${0.2 + Math.sin(frame * 0.1) * 0.1})`;
+            // Crit flash
+            if (critFlash > 0) {
+                ctx.fillStyle = `rgba(255,215,0,${critFlash * 0.3})`;
                 ctx.fillRect(0, 0, W, H);
             }
+
+            // Low health vignette
+            if (hp <= 0.3) {
+                const vignetteGrad = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, W/2);
+                vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                vignetteGrad.addColorStop(1, `rgba(100,0,0,${0.3 + Math.sin(frame * 0.1) * 0.1})`);
+                ctx.fillStyle = vignetteGrad;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // Boss warning
+            if (bossActive) {
+                ctx.fillStyle = `rgba(255,0,0,${0.15 + Math.sin(frame * 0.1) * 0.1})`;
+                ctx.fillRect(0, 0, W, H);
+                ctx.font = 'bold 24px Orbitron'; ctx.textAlign = 'center';
+                ctx.fillStyle = '#e94560';
+                ctx.shadowColor = '#e94560'; ctx.shadowBlur = 15;
+                ctx.fillText('⚠️ BOSS FIGHT ⚠️', W/2, horizon - 20);
+                ctx.shadowBlur = 0;
+            }
+
+            // Danger indicators
+            dangerIndicators.forEach(d => {
+                const x = d.side === 'left' ? 25 : W - 25;
+                ctx.fillStyle = d.danger >= 3 ? '#ff0000' : d.danger >= 2 ? '#ff6600' : '#ffcc00';
+                ctx.globalAlpha = 0.7 + Math.sin(frame * 0.15) * 0.3;
+                ctx.beginPath();
+                if (d.side === 'left') {
+                    ctx.moveTo(x, d.y); ctx.lineTo(x + 20, d.y - 15); ctx.lineTo(x + 20, d.y + 15);
+                } else {
+                    ctx.moveTo(x, d.y); ctx.lineTo(x - 20, d.y - 15); ctx.lineTo(x - 20, d.y + 15);
+                }
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
         }
 
         // ============================================
@@ -800,65 +1194,181 @@
 
         function drawShopMenu() {
             if (!activeShop) return;
-            ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
-            const pw = 600, ph = 450, px = (W - pw) / 2, py = (H - ph) / 2;
-            ctx.fillStyle = '#1a1a2e'; ctx.fillRect(px, py, pw, ph);
-            ctx.strokeStyle = activeShop === 'gun' ? '#e94560' : '#4CAF50'; ctx.lineWidth = 4;
+            ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, W, H);
+            const pw = 650, ph = 480, px = (W - pw) / 2, py = (H - ph) / 2;
+
+            // Panel background with gradient
+            const panelGrad = ctx.createLinearGradient(px, py, px, py + ph);
+            panelGrad.addColorStop(0, '#1a1a2e');
+            panelGrad.addColorStop(1, '#0a0a1a');
+            ctx.fillStyle = panelGrad;
+            ctx.fillRect(px, py, pw, ph);
+
+            // Border color based on shop type
+            const shopColors = { gun: '#e94560', pet: '#4CAF50', perk: '#9932CC', upgrade: '#00bfff' };
+            const shopTitles = { gun: '🔫 ARMORY', pet: '🐾 PET SHOP', perk: '✨ PERKS', upgrade: '⚡ UPGRADES' };
+            ctx.strokeStyle = shopColors[activeShop] || '#e94560';
+            ctx.lineWidth = 4;
             ctx.strokeRect(px, py, pw, ph);
 
-            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Courier New'; ctx.textAlign = 'center';
-            ctx.fillText(activeShop === 'gun' ? '🔫 GUN SHOP' : '🐾 PET SHOP', W/2, py + 45);
-            ctx.fillStyle = '#ffd700'; ctx.font = '20px Courier New';
-            ctx.fillText(`Gold: ${saveData.gold}`, W/2, py + 75);
+            // Glow effect
+            ctx.shadowColor = shopColors[activeShop];
+            ctx.shadowBlur = 20;
+            ctx.strokeRect(px, py, pw, ph);
+            ctx.shadowBlur = 0;
 
-            const items = activeShop === 'gun' ? Object.entries(GUNS) : Object.entries(PETS);
-            const ownedList = activeShop === 'gun' ? saveData.ownedGuns : saveData.ownedPets;
-            const equipped = activeShop === 'gun' ? saveData.equippedGun : saveData.activePets;
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Orbitron, Courier New'; ctx.textAlign = 'center';
+            ctx.fillText(shopTitles[activeShop], W/2, py + 45);
+            ctx.fillStyle = '#ffd700'; ctx.font = 'bold 20px Rajdhani, Courier New';
+            ctx.fillText(`💰 ${saveData.gold} Gold`, W/2, py + 75);
 
-            let itemY = py + 110;
-            items.forEach(([id, item], index) => {
-                const owned = ownedList.includes(id);
-                const isEquipped = activeShop === 'gun' ? equipped === id : equipped.includes(id);
-                ctx.fillStyle = isEquipped ? 'rgba(76, 175, 80, 0.3)' : owned ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)';
-                ctx.fillRect(px + 20, itemY, pw - 40, 45);
-                ctx.strokeStyle = isEquipped ? '#4CAF50' : owned ? '#666' : '#333'; ctx.lineWidth = 2;
-                ctx.strokeRect(px + 20, itemY, pw - 40, 45);
+            let itemY = py + 105;
 
-                ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Courier New'; ctx.textAlign = 'left';
-                ctx.fillText(`${index + 1}. ${item.name}`, px + 40, itemY + 28);
-                ctx.fillStyle = '#aaa'; ctx.font = '12px Courier New';
-                if (activeShop === 'gun') ctx.fillText(`DMG:${item.damage} MAG:${item.magSize}`, px + 200, itemY + 28);
-                else ctx.fillText(`DMG:${item.damage}`, px + 200, itemY + 28);
+            if (activeShop === 'gun' || activeShop === 'pet') {
+                const items = activeShop === 'gun' ? Object.entries(GUNS) : Object.entries(PETS);
+                const ownedList = activeShop === 'gun' ? saveData.ownedGuns : saveData.ownedPets;
+                const equipped = activeShop === 'gun' ? saveData.equippedGun : saveData.activePets;
 
-                ctx.textAlign = 'right';
-                if (isEquipped) { ctx.fillStyle = '#4CAF50'; ctx.fillText('EQUIPPED', px + pw - 40, itemY + 28); }
-                else if (owned) { ctx.fillStyle = '#2196F3'; ctx.fillText('EQUIP', px + pw - 40, itemY + 28); }
-                else { ctx.fillStyle = saveData.gold >= item.price ? '#ffd700' : '#666'; ctx.fillText(`${item.price}g`, px + pw - 40, itemY + 28); }
-                itemY += 52;
-            });
+                items.forEach(([id, item], index) => {
+                    const owned = ownedList.includes(id);
+                    const isEquipped = activeShop === 'gun' ? equipped === id : equipped.includes(id);
 
-            ctx.fillStyle = '#888'; ctx.font = '14px Courier New'; ctx.textAlign = 'center';
-            ctx.fillText('Press number to buy/equip | ESC to close', W/2, py + ph - 20);
+                    // Item background
+                    const itemGrad = ctx.createLinearGradient(px + 20, itemY, px + pw - 20, itemY);
+                    if (isEquipped) { itemGrad.addColorStop(0, 'rgba(76,175,80,0.3)'); itemGrad.addColorStop(1, 'rgba(76,175,80,0.1)'); }
+                    else if (owned) { itemGrad.addColorStop(0, 'rgba(255,255,255,0.1)'); itemGrad.addColorStop(1, 'rgba(255,255,255,0.05)'); }
+                    else { itemGrad.addColorStop(0, 'rgba(0,0,0,0.4)'); itemGrad.addColorStop(1, 'rgba(0,0,0,0.2)'); }
+                    ctx.fillStyle = itemGrad;
+                    ctx.fillRect(px + 20, itemY, pw - 40, 38);
+                    ctx.strokeStyle = isEquipped ? '#4CAF50' : owned ? '#555' : '#333';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 38);
+
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 15px Rajdhani, Courier New'; ctx.textAlign = 'left';
+                    ctx.fillText(`${index + 1}. ${item.name}`, px + 35, itemY + 25);
+                    ctx.fillStyle = '#aaa'; ctx.font = '12px Rajdhani';
+                    if (activeShop === 'gun') ctx.fillText(`DMG:${item.damage} MAG:${item.magSize}`, px + 220, itemY + 25);
+                    else ctx.fillText(`DMG:${item.damage} RNG:${item.range || '-'}`, px + 200, itemY + 25);
+
+                    ctx.textAlign = 'right';
+                    if (isEquipped) { ctx.fillStyle = '#4CAF50'; ctx.font = 'bold 14px Rajdhani'; ctx.fillText('✓ EQUIPPED', px + pw - 35, itemY + 25); }
+                    else if (owned) { ctx.fillStyle = '#2196F3'; ctx.fillText('EQUIP [' + (index+1) + ']', px + pw - 35, itemY + 25); }
+                    else { ctx.fillStyle = saveData.gold >= item.price ? '#ffd700' : '#666'; ctx.fillText(`${item.price}g`, px + pw - 35, itemY + 25); }
+                    itemY += 40;
+                });
+            } else if (activeShop === 'perk') {
+                Object.entries(PERKS).forEach(([id, perk], index) => {
+                    const owned = saveData.perks.includes(id);
+                    ctx.fillStyle = owned ? 'rgba(76,175,80,0.2)' : 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 50);
+                    ctx.strokeStyle = owned ? '#4CAF50' : '#555';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 50);
+
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'left';
+                    ctx.fillText(`${index + 1}. ${perk.icon} ${perk.name}`, px + 35, itemY + 22);
+                    ctx.fillStyle = '#aaa'; ctx.font = '12px Rajdhani';
+                    ctx.fillText(perk.desc, px + 35, itemY + 40);
+
+                    ctx.textAlign = 'right';
+                    if (owned) { ctx.fillStyle = '#4CAF50'; ctx.fillText('✓ OWNED', px + pw - 35, itemY + 30); }
+                    else { ctx.fillStyle = saveData.gold >= perk.price ? '#ffd700' : '#666'; ctx.fillText(`${perk.price}g`, px + pw - 35, itemY + 30); }
+                    itemY += 55;
+                });
+            } else if (activeShop === 'upgrade') {
+                const gunId = saveData.equippedGun;
+                const gun = GUNS[gunId];
+                const upgrades = saveData.gunUpgrades[gunId] || { damage: 0, fireRate: 0, magSize: 0 };
+
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 18px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText(`Upgrading: ${gun.name}`, W/2, itemY + 10);
+                itemY += 35;
+
+                [['damage', 'Damage', gun.damage], ['fireRate', 'Fire Rate', 'Speed'], ['magSize', 'Mag Size', gun.magSize]].forEach(([stat, label, baseVal], i) => {
+                    const level = upgrades[stat] || 0;
+                    const cost = GUN_UPGRADE_COSTS[stat] * (level + 1);
+                    const maxed = level >= GUN_UPGRADE_MAX;
+
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(px + 20, itemY, pw - 40, 55);
+                    ctx.strokeStyle = '#00bfff';
+                    ctx.strokeRect(px + 20, itemY, pw - 40, 55);
+
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Rajdhani'; ctx.textAlign = 'left';
+                    ctx.fillText(`${i + 1}. ${label}`, px + 35, itemY + 22);
+
+                    // Level bar
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(px + 35, itemY + 32, 200, 12);
+                    ctx.fillStyle = '#00bfff';
+                    ctx.fillRect(px + 35, itemY + 32, 200 * (level / GUN_UPGRADE_MAX), 12);
+                    ctx.fillStyle = '#fff'; ctx.font = '11px Rajdhani';
+                    ctx.fillText(`Lv ${level}/${GUN_UPGRADE_MAX}`, px + 240, itemY + 42);
+
+                    ctx.textAlign = 'right';
+                    if (maxed) { ctx.fillStyle = '#4CAF50'; ctx.fillText('MAX', px + pw - 35, itemY + 35); }
+                    else { ctx.fillStyle = saveData.gold >= cost ? '#ffd700' : '#666'; ctx.fillText(`${cost}g`, px + pw - 35, itemY + 35); }
+                    itemY += 60;
+                });
+
+                ctx.fillStyle = '#888'; ctx.font = '12px Rajdhani'; ctx.textAlign = 'center';
+                ctx.fillText('Upgrades apply to currently equipped gun', W/2, itemY + 15);
+            }
+
+            ctx.fillStyle = '#666'; ctx.font = '14px Rajdhani'; ctx.textAlign = 'center';
+            ctx.fillText('Press number to buy/equip | ESC to close', W/2, py + ph - 18);
         }
 
         // ============================================
         // SHOOTING
         // ============================================
+        // Helper to get gun stats with upgrades
+        function getGunStats(gunId) {
+            const base = GUNS[gunId];
+            const upgrades = saveData.gunUpgrades[gunId] || { damage: 0, fireRate: 0, magSize: 0 };
+            return {
+                ...base,
+                damage: base.damage + (upgrades.damage * base.damage * 0.15),
+                fireRate: Math.max(20, base.fireRate - (upgrades.fireRate * base.fireRate * 0.12)),
+                magSize: base.magSize + (upgrades.magSize * Math.ceil(base.magSize * 0.2))
+            };
+        }
+
         function shoot() {
             if (player.reloading) return;
-            const gun = GUNS[player.gun];
+            const gun = getGunStats(player.gun);
             const now = Date.now();
-            if (now - player.lastShot < (activePowerups.rapid ? gun.fireRate / 2 : gun.fireRate)) return;
+            const quickHands = saveData.perks.includes('quickHands');
+            let fireRate = activePowerups.rapid ? gun.fireRate / 2 : gun.fireRate;
+            if (now - player.lastShot < fireRate) return;
             if (player.mag <= 0) { playSound('empty'); startReload(); return; }
 
             player.lastShot = now;
             player.mag--;
-            ammoEl.textContent = `${player.mag}/${gun.magSize}`;
+            ammoEl.textContent = `${player.mag}/${Math.ceil(gun.magSize)}`;
 
             playSound(gun.sound);
             muzzleFlash = 1;
             player.recoil = 1;
             screenShake = 4;
+
+            // Add laser beam effect
+            if (GUNS[player.gun].pierce) {
+                laserBeams.push({ x1: W/2, y1: H - 100, x2: mouseX, y2: mouseY, alpha: 1 });
+            }
+            // Add fire particles for flamethrower
+            if (GUNS[player.gun].burn) {
+                for (let i = 0; i < 5; i++) {
+                    fireParticles.push({
+                        x: W/2 + (Math.random() - 0.5) * 40,
+                        y: H - 120,
+                        vx: (mouseX - W/2) * 0.02 + (Math.random() - 0.5) * 3,
+                        vy: (mouseY - H + 100) * 0.02 + (Math.random() - 0.5) * 3,
+                        size: 8 + Math.random() * 12,
+                        life: 1
+                    });
+                }
+            }
 
             for (let b = 0; b < gun.bullets; b++) {
                 const spreadX = (Math.random() - 0.5) * gun.spread * 400;
@@ -877,9 +1387,16 @@
                         // Check headshot (upper 30% of zombie)
                         const headZone = z.screenY - z.screenSize * 0.65;
                         const isHeadshot = hitY < headZone;
+
+                        // Critical hit chance
+                        const deadEye = saveData.perks.includes('deadEye');
+                        const critChance = deadEye ? 0.20 : 0.05;
+                        const isCrit = Math.random() < critChance && !isHeadshot;
+
                         let damage = gun.damage;
                         if (activePowerups.damage) damage *= 2;
                         if (isHeadshot) { damage *= 2; headshots++; playSound('headshot'); }
+                        if (isCrit) { damage *= 3; critFlash = 1; playSound('headshot'); }
 
                         // Armored zombies take 50% less damage (unless headshot)
                         if (z.type === 'armored' && !isHeadshot) {
@@ -893,20 +1410,21 @@
 
                         z.health -= damage;
                         playSound('zombieHit');
-                        hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.5, alpha: 1, headshot: isHeadshot });
+                        hitMarkers.push({ x: z.screenX, y: z.screenY - z.screenSize * 0.5, alpha: 1, headshot: isHeadshot, crit: isCrit });
 
-                        for (let i = 0; i < 4; i++) {
+                        for (let i = 0; i < (isCrit ? 8 : 4); i++) {
                             bloodSplats.push({
                                 x: z.screenX + (Math.random() - 0.5) * 30,
                                 y: z.screenY - z.screenSize * 0.5 + (Math.random() - 0.5) * 30,
-                                size: 4 + Math.random() * 5, alpha: 1
+                                size: 4 + Math.random() * (isCrit ? 8 : 5), alpha: 1
                             });
                         }
 
-                        // Rocket launcher splash damage
+                        // Rocket launcher splash damage + trail
                         if (gun.splash) {
                             playSound('explosion');
                             screenShake = 8;
+                            rocketTrails.push({ x: W/2, y: H - 100, targetX: z.screenX, targetY: z.screenY, progress: 0 });
                             zombies.forEach(oz => {
                                 if (oz !== z && Math.abs(oz.x - z.x) < gun.splash && Math.abs(oz.depth - z.depth) < 40) {
                                     oz.health -= gun.damage * 0.5;
@@ -917,10 +1435,42 @@
                         if (z.health <= 0) {
                             playSound('zombieDie');
                             kills++;
+                            killstreak++;
+                            killstreakTimer = 180; // 3 seconds to maintain streak
+
+                            // COMBO SYSTEM
+                            combo++;
+                            comboTimer = 120; // 2 seconds to chain
+                            if (combo > maxCombo) maxCombo = combo;
+
                             let goldDrop = 5 + Math.floor(Math.random() * 12);
                             if (isHeadshot) goldDrop *= 2;
+                            if (isCrit) goldDrop *= 2;
                             if (z.type === 'boss') goldDrop = 100 + Math.floor(Math.random() * 50);
                             if (z.type === 'armored') goldDrop += 15;
+
+                            // Combo bonus gold
+                            const comboMultiplier = Math.min(4, 1 + Math.floor(combo / 5) * 0.5);
+                            goldDrop = Math.floor(goldDrop * comboMultiplier);
+
+                            // Gold Rush perk
+                            if (saveData.perks.includes('goldRush')) {
+                                goldDrop = Math.floor(goldDrop * 1.25);
+                            }
+
+                            // KILLSTREAK REWARDS
+                            if (killstreak === 10) {
+                                activePowerups.speed = Date.now() + 3000;
+                            } else if (killstreak === 25) {
+                                player.mag = getGunStats(player.gun).magSize;
+                            }
+
+                            // Death animation
+                            deadZombies.push({
+                                x: z.screenX, y: z.screenY, size: z.screenSize,
+                                type: z.type, rotation: 0, vy: -5, vr: (Math.random() - 0.5) * 0.3,
+                                alpha: 1
+                            });
 
                             // Exploder explodes on death
                             if (z.type === 'exploder') {
@@ -945,17 +1495,21 @@
         }
 
         function startReload() {
-            if (player.reloading || player.mag >= GUNS[player.gun].magSize) return;
+            const gun = getGunStats(player.gun);
+            if (player.reloading || player.mag >= gun.magSize) return;
             player.reloading = true;
-            player.reloadEnd = Date.now() + GUNS[player.gun].reloadTime;
+            let reloadTime = GUNS[player.gun].reloadTime;
+            if (saveData.perks.includes('quickHands')) reloadTime *= 0.7;
+            player.reloadEnd = Date.now() + reloadTime;
             playSound('reload');
         }
 
         function checkReload() {
+            const gun = getGunStats(player.gun);
             if (player.reloading && Date.now() >= player.reloadEnd) {
                 player.reloading = false;
-                player.mag = GUNS[player.gun].magSize;
-                ammoEl.textContent = `${player.mag}/${GUNS[player.gun].magSize}`;
+                player.mag = Math.ceil(gun.magSize);
+                ammoEl.textContent = `${player.mag}/${Math.ceil(gun.magSize)}`;
             }
         }
 
@@ -1219,10 +1773,15 @@
                     if (c.depth > 30) c.depth -= 3;
                 }
                 if (c.depth < 22 && Math.abs(c.x - player.x) < (activePowerups.magnet ? 80 : 40)) {
+                    const gun = getGunStats(player.gun);
                     if (c.type === 'gold') { runGold += c.value; goldEl.textContent = runGold; }
-                    else if (c.type === 'health') { player.health = Math.min(player.maxHealth, player.health + 30); healthEl.textContent = player.health; }
-                    else if (c.type === 'ammo') { player.mag = GUNS[player.gun].magSize; ammoEl.textContent = `${player.mag}/${GUNS[player.gun].magSize}`; }
-                    else if (c.type === 'grenade') { playerGrenades = Math.min(10, playerGrenades + 1); }
+                    else if (c.type === 'health') { player.health = Math.min(player.maxHealth, player.health + 30); healthEl.textContent = Math.ceil(player.health); }
+                    else if (c.type === 'ammo') {
+                        const scavenger = saveData.perks.includes('scavenger');
+                        player.mag = Math.min(player.mag + Math.ceil(gun.magSize * (scavenger ? 0.75 : 0.5)), Math.ceil(gun.magSize));
+                        ammoEl.textContent = `${player.mag}/${Math.ceil(gun.magSize)}`;
+                    }
+                    else if (c.type === 'grenade') { playerGrenades = Math.min(10, playerGrenades + (saveData.perks.includes('scavenger') ? 2 : 1)); }
                     playSound('pickup');
                     c.value = 0;
                 }
@@ -1278,13 +1837,82 @@
             if (muzzleFlash > 0) muzzleFlash -= 0.28;
             if (player.recoil > 0) player.recoil -= 0.14;
             if (damageFlash > 0) damageFlash -= 0.05;
+            if (critFlash > 0) critFlash -= 0.08;
             if (screenShake > 0) screenShake -= 0.6;
+
+            // Combo timer
+            if (comboTimer > 0) {
+                comboTimer--;
+                if (comboTimer <= 0) combo = 0;
+            }
+
+            // Killstreak timer
+            if (killstreakTimer > 0) {
+                killstreakTimer--;
+                if (killstreakTimer <= 0) killstreak = 0;
+            }
+
             hitMarkers.forEach(h => h.alpha -= 0.07);
             hitMarkers = hitMarkers.filter(h => h.alpha > 0);
             bloodSplats.forEach(b => b.alpha -= 0.03);
             bloodSplats = bloodSplats.filter(b => b.alpha > 0);
             particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= 0.035; });
             particles = particles.filter(p => p.life > 0);
+
+            // Laser beams
+            laserBeams.forEach(l => l.alpha -= 0.15);
+            laserBeams = laserBeams.filter(l => l.alpha > 0);
+
+            // Fire particles
+            fireParticles.forEach(f => { f.x += f.vx; f.y += f.vy; f.vy -= 0.1; f.life -= 0.04; f.size *= 0.97; });
+            fireParticles = fireParticles.filter(f => f.life > 0);
+
+            // Rocket trails
+            rocketTrails.forEach(r => { r.progress += 0.15; });
+            rocketTrails = rocketTrails.filter(r => r.progress < 1);
+
+            // Dead zombie animations
+            deadZombies.forEach(d => { d.y += d.vy; d.vy += 0.5; d.rotation += d.vr; d.alpha -= 0.02; });
+            deadZombies = deadZombies.filter(d => d.alpha > 0 && d.y < H + 50);
+
+            // Weather particles
+            updateWeather();
+
+            // Danger indicators
+            updateDangerIndicators();
+        }
+
+        function updateWeather() {
+            const env = getEnvironment();
+            // Spawn weather particles
+            if (env === 'forest' && Math.random() < 0.3) {
+                weatherParticles.push({ x: Math.random() * W, y: -10, vx: -1, vy: 8 + Math.random() * 4, type: 'rain' });
+            } else if (env === 'snow' && Math.random() < 0.4) {
+                weatherParticles.push({ x: Math.random() * W, y: -10, vx: Math.random() * 2 - 1, vy: 2 + Math.random() * 2, type: 'snow' });
+            } else if (env === 'desert' && Math.random() < 0.2) {
+                weatherParticles.push({ x: Math.random() * W, y: horizon + Math.random() * 100, vx: 5 + Math.random() * 3, vy: -0.5, type: 'sand' });
+            } else if (env === 'nuclear' && Math.random() < 0.15) {
+                weatherParticles.push({ x: Math.random() * W, y: -10, vx: Math.random() - 0.5, vy: 1 + Math.random(), type: 'ash' });
+            }
+            // Update particles
+            weatherParticles.forEach(w => { w.x += w.vx; w.y += w.vy; });
+            weatherParticles = weatherParticles.filter(w => w.y < H && w.x > -10 && w.x < W + 10);
+            if (weatherParticles.length > 200) weatherParticles = weatherParticles.slice(-200);
+        }
+
+        function updateDangerIndicators() {
+            dangerIndicators = [];
+            zombies.forEach(z => {
+                if (z.depth < 50 && z.screenX !== undefined) {
+                    if (z.screenX < 50 || z.screenX > W - 50) {
+                        dangerIndicators.push({
+                            side: z.screenX < 50 ? 'left' : 'right',
+                            y: Math.max(horizon + 20, Math.min(H - 50, z.screenY)),
+                            danger: z.type === 'boss' ? 3 : z.type === 'tank' ? 2 : 1
+                        });
+                    }
+                }
+            });
         }
 
         function updateLobby() {
@@ -1312,6 +1940,23 @@
         }
 
         function gameOver() {
+            // Second Wind perk - revive once per run
+            if (saveData.perks.includes('secondWind') && !player.usedSecondWind) {
+                player.usedSecondWind = true;
+                player.health = 30;
+                healthEl.textContent = player.health;
+                screenShake = 15;
+                damageFlash = 1;
+                // Clear nearby zombies
+                zombies.forEach(z => {
+                    if (z.depth < 50) z.health -= 100;
+                });
+                // Visual feedback
+                hitMarkers.push({ x: W/2, y: H/2, alpha: 2, headshot: false, crit: false, secondWind: true });
+                playSound('powerup');
+                return; // Don't die
+            }
+
             gameMode = 'gameover';
             document.getElementById('deathDistance').textContent = distance;
             document.getElementById('deathKills').textContent = kills;
@@ -1344,23 +1989,35 @@
             nextBossDistance = 1000; bossActive = null;
             activePowerups = {};
 
+            // Apply perks
+            const thickSkin = saveData.perks.includes('thickSkin');
+            const baseMaxHP = thickSkin ? 125 : 100;
+            const gun = getGunStats(saveData.equippedGun);
+
             player = {
-                x: 0, health: 100, maxHealth: 100, gun: saveData.equippedGun,
-                mag: GUNS[saveData.equippedGun].magSize, reloading: false, reloadEnd: 0, lastShot: 0, recoil: 0
+                x: 0, health: baseMaxHP, maxHealth: baseMaxHP, gun: saveData.equippedGun,
+                mag: Math.ceil(gun.magSize), reloading: false, reloadEnd: 0, lastShot: 0, recoil: 0,
+                usedSecondWind: false
             };
 
             zombies = []; crates = []; powerups = []; projectiles = []; particles = []; bloodSplats = []; hitMarkers = []; grenades = [];
-            muzzleFlash = 0; damageFlash = 0; screenShake = 0;
+            muzzleFlash = 0; damageFlash = 0; screenShake = 0; critFlash = 0;
             playerGrenades = 3;
+
+            // Reset new effect arrays
+            combo = 0; comboTimer = 0; maxCombo = 0;
+            killstreak = 0; killstreakTimer = 0;
+            laserBeams = []; fireParticles = []; rocketTrails = [];
+            deadZombies = []; weatherParticles = []; dangerIndicators = [];
 
             activePets = [];
             saveData.activePets.forEach((petId, i) => {
                 activePets.push({ type: petId, x: player.x, depth: 25, offset: (i - (saveData.activePets.length - 1) / 2) * 30, lastAttack: 0, attackFlash: 0 });
             });
 
-            distanceEl.textContent = 0; goldEl.textContent = 0; healthEl.textContent = 100;
+            distanceEl.textContent = 0; goldEl.textContent = 0; healthEl.textContent = baseMaxHP;
             gunEl.textContent = GUNS[player.gun].name;
-            ammoEl.textContent = `${player.mag}/${GUNS[player.gun].magSize}`;
+            ammoEl.textContent = `${player.mag}/${Math.ceil(gun.magSize)}`;
 
             document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
             document.getElementById('runHud').style.display = 'flex';
@@ -1371,25 +2028,59 @@
         }
 
         function handleShopInput(key) {
-            const items = activeShop === 'gun' ? Object.keys(GUNS) : Object.keys(PETS);
             const index = parseInt(key) - 1;
-            if (index >= 0 && index < items.length) {
-                const itemId = items[index];
-                const item = activeShop === 'gun' ? GUNS[itemId] : PETS[itemId];
-                const ownedList = activeShop === 'gun' ? saveData.ownedGuns : saveData.ownedPets;
-                if (ownedList.includes(itemId)) {
-                    if (activeShop === 'gun') saveData.equippedGun = itemId;
-                    else {
-                        if (saveData.activePets.includes(itemId)) saveData.activePets = saveData.activePets.filter(p => p !== itemId);
-                        else if (saveData.activePets.length < 3) saveData.activePets.push(itemId);
+
+            if (activeShop === 'gun' || activeShop === 'pet') {
+                const items = activeShop === 'gun' ? Object.keys(GUNS) : Object.keys(PETS);
+                if (index >= 0 && index < items.length) {
+                    const itemId = items[index];
+                    const item = activeShop === 'gun' ? GUNS[itemId] : PETS[itemId];
+                    const ownedList = activeShop === 'gun' ? saveData.ownedGuns : saveData.ownedPets;
+                    if (ownedList.includes(itemId)) {
+                        if (activeShop === 'gun') saveData.equippedGun = itemId;
+                        else {
+                            if (saveData.activePets.includes(itemId)) saveData.activePets = saveData.activePets.filter(p => p !== itemId);
+                            else if (saveData.activePets.length < 3) saveData.activePets.push(itemId);
+                        }
+                        playSound('pickup'); saveSave();
+                    } else if (saveData.gold >= item.price) {
+                        saveData.gold -= item.price;
+                        if (activeShop === 'gun') { saveData.ownedGuns.push(itemId); saveData.equippedGun = itemId; }
+                        else { saveData.ownedPets.push(itemId); if (saveData.activePets.length < 3) saveData.activePets.push(itemId); }
+                        playSound('buy'); saveSave();
+                    } else playSound('empty');
+                }
+            } else if (activeShop === 'perk') {
+                const perkIds = Object.keys(PERKS);
+                if (index >= 0 && index < perkIds.length) {
+                    const perkId = perkIds[index];
+                    const perk = PERKS[perkId];
+                    if (saveData.perks.includes(perkId)) {
+                        playSound('empty'); // Already owned
+                    } else if (saveData.gold >= perk.price) {
+                        saveData.gold -= perk.price;
+                        saveData.perks.push(perkId);
+                        playSound('buy'); saveSave();
+                    } else playSound('empty');
+                }
+            } else if (activeShop === 'upgrade') {
+                const stats = ['damage', 'fireRate', 'magSize'];
+                if (index >= 0 && index < stats.length) {
+                    const stat = stats[index];
+                    const gunId = saveData.equippedGun;
+                    if (!saveData.gunUpgrades[gunId]) saveData.gunUpgrades[gunId] = { damage: 0, fireRate: 0, magSize: 0 };
+                    const level = saveData.gunUpgrades[gunId][stat] || 0;
+                    if (level >= GUN_UPGRADE_MAX) {
+                        playSound('empty'); // Already maxed
+                    } else {
+                        const cost = GUN_UPGRADE_COSTS[stat] * (level + 1);
+                        if (saveData.gold >= cost) {
+                            saveData.gold -= cost;
+                            saveData.gunUpgrades[gunId][stat] = level + 1;
+                            playSound('buy'); saveSave();
+                        } else playSound('empty');
                     }
-                    playSound('pickup'); saveSave();
-                } else if (saveData.gold >= item.price) {
-                    saveData.gold -= item.price;
-                    if (activeShop === 'gun') { saveData.ownedGuns.push(itemId); saveData.equippedGun = itemId; }
-                    else { saveData.ownedPets.push(itemId); if (saveData.activePets.length < 3) saveData.activePets.push(itemId); }
-                    playSound('buy'); saveSave();
-                } else playSound('empty');
+                }
             }
         }
 
@@ -1431,7 +2122,7 @@
                     else if (o.type === 'grenade') drawGrenades();
                 });
 
-                drawBlood(); drawHitMarkers(); drawParticles(); drawGun(); drawCrosshair(); drawRunHUD();
+                drawWeather(); drawDeadZombies(); drawBlood(); drawHitMarkers(); drawWeaponEffects(); drawParticles(); drawGun(); drawCrosshair(); drawRunHUD();
                 ctx.restore();
             }
             requestAnimationFrame(gameLoop);
