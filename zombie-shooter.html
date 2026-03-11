@@ -1192,11 +1192,7 @@
         }
 
         function drawCrosshair() {
-            // Fixed center crosshair (Last Run style)
-            const cx = W / 2;
-            const cy = H / 2;
-
-            // Red crosshair like Last Run screenshot
+            // Red crosshair that follows mouse (Last Run style)
             ctx.strokeStyle = activePowerups.damage ? '#FF8800' : '#FF4444';
             ctx.lineWidth = 3;
 
@@ -1205,24 +1201,24 @@
 
             // Horizontal lines
             ctx.beginPath();
-            ctx.moveTo(cx - size - gap, cy);
-            ctx.lineTo(cx - gap, cy);
-            ctx.moveTo(cx + gap, cy);
-            ctx.lineTo(cx + size + gap, cy);
+            ctx.moveTo(mouseX - size - gap, mouseY);
+            ctx.lineTo(mouseX - gap, mouseY);
+            ctx.moveTo(mouseX + gap, mouseY);
+            ctx.lineTo(mouseX + size + gap, mouseY);
             ctx.stroke();
 
             // Vertical lines
             ctx.beginPath();
-            ctx.moveTo(cx, cy - size - gap);
-            ctx.lineTo(cx, cy - gap);
-            ctx.moveTo(cx, cy + gap);
-            ctx.lineTo(cx, cy + size + gap);
+            ctx.moveTo(mouseX, mouseY - size - gap);
+            ctx.lineTo(mouseX, mouseY - gap);
+            ctx.moveTo(mouseX, mouseY + gap);
+            ctx.lineTo(mouseX, mouseY + size + gap);
             ctx.stroke();
 
             // Center dot
             ctx.fillStyle = '#FF4444';
             ctx.beginPath();
-            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.arc(mouseX, mouseY, 2, 0, Math.PI * 2);
             ctx.fill();
         }
 
