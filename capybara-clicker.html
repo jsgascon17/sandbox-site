@@ -898,6 +898,7 @@
         let miniGameScore = 0;
         let miniGameTime = 30;
         let miniGameObjects = [];
+        let miniGamePlayerX = 200; // Player X position (center of canvas)
         const miniGameCanvas = document.getElementById('miniGameCanvas');
         const miniGameCtx = miniGameCanvas.getContext('2d');
 
@@ -908,6 +909,7 @@
             miniGameScore = 0;
             miniGameTime = 30;
             miniGameObjects = [];
+            miniGamePlayerX = miniGameCanvas.width / 2; // Reset player to center
             document.getElementById('miniGameOverlay').classList.remove('hidden');
             document.getElementById('miniGameScore').textContent = 'Score: 0';
             document.getElementById('miniGameTimer').textContent = 'Time: 30s';
@@ -956,29 +958,65 @@
                 });
             }
 
-            // Update
+            // Update oranges
             miniGameObjects.forEach(obj => {
                 obj.y += obj.speed;
             });
+
+            // Check collision with player (capybara catches oranges)
+            const playerY = miniGameCanvas.height - 30;
+            for (let i = miniGameObjects.length - 1; i >= 0; i--) {
+                const obj = miniGameObjects[i];
+                const dist = Math.sqrt((miniGamePlayerX - obj.x) ** 2 + (playerY - obj.y) ** 2);
+                if (dist < 40) { // Catch radius
+                    miniGameObjects.splice(i, 1);
+                    miniGameScore += obj.type === 'golden' ? 5 : 1;
+                    document.getElementById('miniGameScore').textContent = `Score: ${miniGameScore}`;
+                    playSound('collect');
+                }
+            }
+
+            // Remove oranges that fell off screen
             miniGameObjects = miniGameObjects.filter(obj => obj.y < miniGameCanvas.height + 30);
 
-            // Draw
+            // Draw background
             miniGameCtx.fillStyle = '#87CEEB';
             miniGameCtx.fillRect(0, 0, miniGameCanvas.width, miniGameCanvas.height);
 
+            // Draw oranges
             miniGameObjects.forEach(obj => {
                 miniGameCtx.font = '30px Arial';
                 miniGameCtx.textAlign = 'center';
                 miniGameCtx.fillText(obj.type === 'golden' ? '🌟' : '🍊', obj.x, obj.y);
             });
 
-            // Draw capybara at bottom
+            // Draw capybara at player position
             miniGameCtx.font = '50px Arial';
-            miniGameCtx.fillText('🦫', miniGameCanvas.width / 2, miniGameCanvas.height - 30);
+            miniGameCtx.fillText('🦫', miniGamePlayerX, miniGameCanvas.height - 30);
 
             requestAnimationFrame(miniGameLoop);
         }
 
+        // Mouse movement to control capybara
+        miniGameCanvas.addEventListener('mousemove', (e) => {
+            if (!miniGameRunning) return;
+            const rect = miniGameCanvas.getBoundingClientRect();
+            miniGamePlayerX = e.clientX - rect.left;
+            // Clamp to canvas bounds
+            miniGamePlayerX = Math.max(25, Math.min(miniGameCanvas.width - 25, miniGamePlayerX));
+        });
+
+        // Touch movement for mobile
+        miniGameCanvas.addEventListener('touchmove', (e) => {
+            if (!miniGameRunning) return;
+            e.preventDefault();
+            const rect = miniGameCanvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            miniGamePlayerX = touch.clientX - rect.left;
+            miniGamePlayerX = Math.max(25, Math.min(miniGameCanvas.width - 25, miniGamePlayerX));
+        });
+
+        // Click to collect oranges (bonus feature - can still click to catch)
         miniGameCanvas.addEventListener('click', (e) => {
             if (!miniGameRunning) return;
             const rect = miniGameCanvas.getBoundingClientRect();
