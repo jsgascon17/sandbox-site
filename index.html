@@ -266,6 +266,22 @@
             50% { transform: rotate(20deg) translateX(10px); }
         }
 
+        /* War Simulator */
+        .warsim-preview {
+            background: linear-gradient(to bottom, #2c3e50 0%, #1a1a2e 100%);
+        }
+
+        .warsim-preview .icon {
+            font-size: 4rem;
+            text-shadow: 0 0 20px #e74c3c;
+            animation: tankRumble 0.3s ease-in-out infinite;
+        }
+
+        @keyframes tankRumble {
+            0%, 100% { transform: translateX(-2px) rotate(-2deg); }
+            50% { transform: translateX(2px) rotate(2deg); }
+        }
+
         .game-info {
             padding: 25px;
         }
@@ -743,6 +759,26 @@
                         <span class="tag">Sports</span>
                         <span class="tag">Football</span>
                         <span class="tag">Season</span>
+                    </div>
+                    <span class="play-btn">Play Now</span>
+                </div>
+            </a>
+
+            <!-- War Simulator -->
+            <a href="war-simulator.html" class="game-card">
+                <div class="game-preview warsim-preview">
+                    <span class="icon">🪖</span>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">War Simulator</h2>
+                    <p class="game-description">
+                        Command vehicles and dominate the battlefield! Choose tanks,
+                        jets, or helicopters. Survive endless waves of enemies!
+                    </p>
+                    <div class="game-tags">
+                        <span class="tag">Action</span>
+                        <span class="tag">Combat</span>
+                        <span class="tag">Vehicles</span>
                     </div>
                     <span class="play-btn">Play Now</span>
                 </div>
