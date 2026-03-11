@@ -251,6 +251,21 @@
             50% { transform: translateY(10px); }
         }
 
+        /* Retro Bowl */
+        .retrobowl-preview {
+            background: linear-gradient(to bottom, #2d5a27 0%, #2d5a27 80%, #1a1a2e 100%);
+        }
+
+        .retrobowl-preview .icon {
+            font-size: 4rem;
+            animation: throwBall 1.5s ease-in-out infinite;
+        }
+
+        @keyframes throwBall {
+            0%, 100% { transform: rotate(-20deg); }
+            50% { transform: rotate(20deg) translateX(10px); }
+        }
+
         .game-info {
             padding: 25px;
         }
@@ -708,6 +723,26 @@
                         <span class="tag">Falling</span>
                         <span class="tag">Levels</span>
                         <span class="tag">Precision</span>
+                    </div>
+                    <span class="play-btn">Play Now</span>
+                </div>
+            </a>
+
+            <!-- Retro Bowl -->
+            <a href="retro-bowl.html" class="game-card">
+                <div class="game-preview retrobowl-preview">
+                    <span class="icon">🏈</span>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">Retro Bowl</h2>
+                    <p class="game-description">
+                        Lead your team to victory! Call plays, throw passes,
+                        and score touchdowns. Play a full 8-game season!
+                    </p>
+                    <div class="game-tags">
+                        <span class="tag">Sports</span>
+                        <span class="tag">Football</span>
+                        <span class="tag">Season</span>
                     </div>
                     <span class="play-btn">Play Now</span>
                 </div>
