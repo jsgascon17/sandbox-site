@@ -8,16 +8,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
         body {
             font-family: 'Rajdhani', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #0a0a1a 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow: hidden;
         }
 
         h1 {
@@ -49,9 +47,11 @@
         .hud-item span { color: #ffd700; font-weight: bold; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
 
         #gameCanvas {
-            border: 3px solid #e94560;
-            border-radius: 12px;
-            box-shadow: 0 0 30px rgba(233,69,96,0.4), 0 0 60px rgba(233,69,96,0.2), inset 0 0 50px rgba(0,0,0,0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             cursor: none;
         }
 
@@ -185,7 +185,7 @@
         <div class="hud-item">Health: <span id="health">100</span></div>
         <div class="hud-item"><span id="gunName">Pistol</span> [<span id="ammo">∞</span>]</div>
     </div>
-    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <div class="instructions" id="runInstructions">
         <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>G</span> Grenade | <span>Q</span> Ultimate | <span>V</span> Melee
         <button id="soundBtn" style="background: #333; border: 2px solid #e94560; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
@@ -268,8 +268,18 @@
         // ============================================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-        const centerX = W / 2, horizon = H * 0.3;
+        let W, H, centerX, horizon;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            W = canvas.width;
+            H = canvas.height;
+            centerX = W / 2;
+            horizon = H * 0.35;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         // ============================================
         // PERSISTENT DATA
@@ -584,145 +594,47 @@
         }
 
         function drawSky() {
-            const env = getEnvironment();
+            // Last Run style - dusty blue-gray sky
             const grad = ctx.createLinearGradient(0, 0, 0, horizon);
-            if (env === 'farm') { grad.addColorStop(0, '#1a0a1a'); grad.addColorStop(1, '#3d1f3d'); }
-            else if (env === 'forest') { grad.addColorStop(0, '#0a1a0a'); grad.addColorStop(1, '#1a3d1a'); }
-            else if (env === 'city') { grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(1, '#1a1a3d'); }
-            else if (env === 'desert') { grad.addColorStop(0, '#2d1a0a'); grad.addColorStop(1, '#5c3d1a'); }
-            else if (env === 'snow') { grad.addColorStop(0, '#1a2a3d'); grad.addColorStop(1, '#3d5a7a'); }
-            else { grad.addColorStop(0, '#1a0a0a'); grad.addColorStop(1, '#3d1a1a'); } // nuclear - red tint
+            grad.addColorStop(0, '#8BA4B4');
+            grad.addColorStop(0.7, '#A8B8C0');
+            grad.addColorStop(1, '#C4CDD2');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, horizon);
-            // Moon (or red sun for nuclear)
-            ctx.fillStyle = env === 'nuclear' ? '#ff3333' : '#ddd';
-            ctx.beginPath(); ctx.arc(W - 100, 50, 30, 0, Math.PI * 2); ctx.fill();
-            if (env === 'nuclear') {
-                ctx.fillStyle = 'rgba(255,50,50,0.3)';
-                ctx.beginPath(); ctx.arc(W - 100, 50, 50, 0, Math.PI * 2); ctx.fill();
-            }
-            // Stars (or snow for snow env)
-            ctx.fillStyle = env === 'snow' ? '#fff' : '#fff';
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 73 + frame * (env === 'snow' ? 0.5 : 0.01)) % W;
-                const y = env === 'snow' ? ((i * 29 + frame * 2) % horizon) : (i * 29) % (horizon - 20) + 10;
-                ctx.globalAlpha = env === 'snow' ? 0.7 : 0.3 + Math.sin(frame * 0.03 + i) * 0.3;
-                ctx.fillRect(x, y, env === 'snow' ? 3 : 2, env === 'snow' ? 3 : 2);
-            }
-            ctx.globalAlpha = 1;
         }
 
         function drawGround() {
-            const env = getEnvironment();
+            // Last Run style - sandy desert ground
             const grad = ctx.createLinearGradient(0, horizon, 0, H);
-            const viewShift = player.x * 2;
-            if (env === 'farm') {
-                grad.addColorStop(0, '#3d2817'); grad.addColorStop(1, '#5c4033');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                ctx.fillStyle = '#8b7355';
-                for (let i = 0; i < 80; i++) {
-                    const x = ((i * 37 - frame * 3 + viewShift) % (W + 200)) - 100;
-                    ctx.fillRect(x, horizon + (H - horizon) * 0.3 + (i % 5) * 10, 3, -(20 + (i % 4) * 10));
-                }
-            } else if (env === 'forest') {
-                grad.addColorStop(0, '#1a3d1a'); grad.addColorStop(1, '#0d260d');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                ctx.fillStyle = '#0a1a0a';
-                for (let i = 0; i < 25; i++) {
-                    const x = ((i * 55 + viewShift * 0.5) % (W + 100)) - 50;
-                    ctx.beginPath(); ctx.moveTo(x, horizon); ctx.lineTo(x + 18, horizon - 50 - (i % 3) * 25); ctx.lineTo(x + 36, horizon); ctx.fill();
-                }
-            } else if (env === 'city') {
-                grad.addColorStop(0, '#2d2d2d'); grad.addColorStop(1, '#1a1a1a');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                ctx.fillStyle = '#0a0a0a';
-                for (let i = 0; i < 18; i++) {
-                    const x = ((i * 65 + viewShift * 0.3) % (W + 100)) - 50;
-                    const h = 60 + (i % 4) * 35;
-                    ctx.fillRect(x, horizon - h, 55, h);
-                    // Windows
-                    ctx.fillStyle = '#ffff0030';
-                    for (let wy = 0; wy < h - 15; wy += 15) {
-                        ctx.fillRect(x + 10, horizon - h + wy + 5, 8, 8);
-                        ctx.fillRect(x + 35, horizon - h + wy + 5, 8, 8);
-                    }
-                    ctx.fillStyle = '#0a0a0a';
-                }
-            } else if (env === 'desert') {
-                grad.addColorStop(0, '#c4a35a'); grad.addColorStop(1, '#8b7355');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                // Sand dunes
-                ctx.fillStyle = '#b8956e';
-                for (let i = 0; i < 10; i++) {
-                    const x = ((i * 120 + viewShift * 0.4) % (W + 200)) - 100;
-                    ctx.beginPath();
-                    ctx.moveTo(x - 60, horizon);
-                    ctx.quadraticCurveTo(x, horizon - 40 - (i % 3) * 15, x + 60, horizon);
-                    ctx.fill();
-                }
-                // Cacti
-                ctx.fillStyle = '#2d5a27';
-                for (let i = 0; i < 8; i++) {
-                    const x = ((i * 150 + viewShift * 0.5) % (W + 150)) - 75;
-                    ctx.fillRect(x, horizon - 30, 8, 30);
-                    ctx.fillRect(x - 12, horizon - 20, 12, 6);
-                    ctx.fillRect(x + 8, horizon - 25, 10, 6);
-                }
-            } else if (env === 'snow') {
-                grad.addColorStop(0, '#e8e8e8'); grad.addColorStop(1, '#b8c8d8');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                // Snow mounds
-                ctx.fillStyle = '#fff';
-                for (let i = 0; i < 15; i++) {
-                    const x = ((i * 80 + viewShift * 0.3) % (W + 160)) - 80;
-                    ctx.beginPath();
-                    ctx.arc(x, horizon + 10, 30 + (i % 3) * 10, Math.PI, 0);
-                    ctx.fill();
-                }
-                // Dead trees
-                ctx.fillStyle = '#4a3728';
-                for (let i = 0; i < 12; i++) {
-                    const x = ((i * 90 + viewShift * 0.4) % (W + 100)) - 50;
-                    ctx.fillRect(x, horizon - 40, 6, 40);
-                    ctx.fillRect(x - 15, horizon - 30, 15, 4);
-                    ctx.fillRect(x + 6, horizon - 35, 12, 4);
-                }
-            } else { // nuclear
-                grad.addColorStop(0, '#3d2d2d'); grad.addColorStop(1, '#2a1a1a');
-                ctx.fillStyle = grad; ctx.fillRect(0, horizon, W, H - horizon);
-                // Destroyed buildings
-                ctx.fillStyle = '#1a1a1a';
-                for (let i = 0; i < 15; i++) {
-                    const x = ((i * 75 + viewShift * 0.3) % (W + 100)) - 50;
-                    const h = 30 + (i % 5) * 25;
-                    ctx.fillRect(x, horizon - h, 45, h);
-                    // Jagged top (destroyed)
-                    ctx.fillStyle = '#3d2d2d';
-                    ctx.beginPath();
-                    ctx.moveTo(x, horizon - h);
-                    ctx.lineTo(x + 15, horizon - h - 10);
-                    ctx.lineTo(x + 30, horizon - h + 5);
-                    ctx.lineTo(x + 45, horizon - h - 5);
-                    ctx.lineTo(x + 45, horizon - h);
-                    ctx.fill();
-                    ctx.fillStyle = '#1a1a1a';
-                }
-                // Radiation glow
-                ctx.fillStyle = `rgba(0,255,0,${0.05 + Math.sin(frame * 0.05) * 0.03})`;
-                ctx.fillRect(0, horizon, W, H - horizon);
-            }
-            // Road
-            ctx.fillStyle = env === 'snow' ? '#555' : env === 'nuclear' ? '#222' : '#333';
-            ctx.beginPath(); ctx.moveTo(centerX - 50, horizon); ctx.lineTo(-200, H); ctx.lineTo(W + 200, H); ctx.lineTo(centerX + 50, horizon); ctx.fill();
-            ctx.strokeStyle = env === 'snow' ? '#888' : '#ffd700'; ctx.lineWidth = 3;
+            grad.addColorStop(0, '#C9B896');
+            grad.addColorStop(0.2, '#BDA87A');
+            grad.addColorStop(0.5, '#A89668');
+            grad.addColorStop(1, '#8B7B55');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, horizon, W, H - horizon);
+
+            // Ground texture lines
+            ctx.strokeStyle = 'rgba(139, 123, 85, 0.3)';
+            ctx.lineWidth = 1;
+
+            // Horizontal lines (perspective)
             for (let i = 0; i < 15; i++) {
-                const t = (i * 0.07 + (frame * 0.02) % 0.07);
-                if (t < 0.04) continue;
-                const y = horizon + (H - horizon) * t;
-                ctx.globalAlpha = Math.min(1, t * 3);
-                ctx.beginPath(); ctx.moveTo(centerX - 6 - t * 50, y); ctx.lineTo(centerX + 6 + t * 50, y); ctx.stroke();
+                const t = (i / 15);
+                const y = horizon + (H - horizon) * Math.pow(t, 0.6);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
             }
-            ctx.globalAlpha = 1;
+
+            // Vertical lines converging to horizon
+            ctx.strokeStyle = 'rgba(139, 123, 85, 0.2)';
+            for (let i = -8; i <= 8; i++) {
+                ctx.beginPath();
+                ctx.moveTo(W / 2 + i * 30, horizon);
+                ctx.lineTo(W / 2 + i * 150, H);
+                ctx.stroke();
+            }
         }
 
         function drawFog() {
@@ -758,19 +670,19 @@
             const wobble = Math.sin(frame * 0.12 + z.id) * 0.08;
             ctx.rotate(wobble);
 
-            // Colors based on type
-            let bodyColor = '#4a5568', headColor = '#5f9654';
-            if (z.type === 'crawler') { headColor = '#8B4513'; }
-            else if (z.type === 'spitter') { headColor = '#9932CC'; bodyColor = '#4B0082'; }
-            else if (z.type === 'exploder') { headColor = '#FF6B6B'; bodyColor = '#8B0000'; }
-            else if (z.type === 'boss') { headColor = '#2F4F4F'; bodyColor = '#1C1C1C'; }
-            else if (z.type === 'fast') { headColor = '#7a9654'; }
-            else if (z.type === 'tank') { headColor = '#4a6634'; }
-            else if (z.type === 'armored') { headColor = '#708090'; bodyColor = '#4a5568'; }
-            else if (z.type === 'shadow') { headColor = '#1a1a2e'; bodyColor = '#0a0a1a'; ctx.globalAlpha = 0.6 + Math.sin(frame * 0.2 + z.id) * 0.2; }
-            else if (z.type === 'healer') { headColor = '#00ff88'; bodyColor = '#006644'; }
-            else if (z.type === 'shielder') { headColor = '#4488ff'; bodyColor = '#224488'; }
-            else if (z.type === 'miniboss') { headColor = z.color || '#ff4400'; bodyColor = '#2a2a2a'; }
+            // Colors based on type - Roblox Last Run style (greenish zombies)
+            let bodyColor = '#6B7B6B', headColor = '#8B9A7E', skinColor = '#8B9A7E';
+            if (z.type === 'crawler') { headColor = '#7A8B6E'; bodyColor = '#5A6B5A'; skinColor = '#7A8B6E'; }
+            else if (z.type === 'spitter') { headColor = '#9932CC'; bodyColor = '#4B0082'; skinColor = '#9932CC'; }
+            else if (z.type === 'exploder') { headColor = '#FF6B6B'; bodyColor = '#8B0000'; skinColor = '#FF6B6B'; }
+            else if (z.type === 'boss') { headColor = '#2F4F4F'; bodyColor = '#1C1C1C'; skinColor = '#3F5F5F'; }
+            else if (z.type === 'fast') { headColor = '#7A8B6E'; bodyColor = '#8B4444'; skinColor = '#7A8B6E'; }
+            else if (z.type === 'tank') { headColor = '#5A6B4A'; bodyColor = '#4A5A4A'; skinColor = '#6A7B5A'; }
+            else if (z.type === 'armored') { headColor = '#708090'; bodyColor = '#4a5568'; skinColor = '#809090'; }
+            else if (z.type === 'shadow') { headColor = '#1a1a2e'; bodyColor = '#0a0a1a'; skinColor = '#2a2a3e'; ctx.globalAlpha = 0.6 + Math.sin(frame * 0.2 + z.id) * 0.2; }
+            else if (z.type === 'healer') { headColor = '#00ff88'; bodyColor = '#006644'; skinColor = '#00ff88'; }
+            else if (z.type === 'shielder') { headColor = '#4488ff'; bodyColor = '#224488'; skinColor = '#6688ff'; }
+            else if (z.type === 'miniboss') { headColor = z.color || '#ff4400'; bodyColor = '#2a2a2a'; skinColor = z.color || '#ff4400'; }
 
             // Crawler is low
             if (z.type === 'crawler') {
@@ -779,13 +691,35 @@
                 ctx.fillStyle = headColor;
                 ctx.fillRect(-size * 0.25, -size * 0.35, size * 0.3, size * 0.22);
             } else {
-                ctx.fillStyle = '#2d3748';
+                // Roblox-style blocky zombie with stretched arms
+                const armWobble = Math.sin(frame * 0.15 + z.id) * 0.1;
+
+                // Legs (dark pants)
+                ctx.fillStyle = '#4A4A4A';
                 ctx.fillRect(-size * 0.18, -size * 0.25, size * 0.14, size * 0.3);
                 ctx.fillRect(size * 0.04, -size * 0.25, size * 0.14, size * 0.3);
+
+                // Body (torso with shirt)
                 ctx.fillStyle = bodyColor;
                 ctx.fillRect(-size * 0.22, -size * 0.6, size * 0.44, size * 0.4);
+
+                // Arms stretched forward (zombie style)
+                ctx.fillStyle = skinColor;
+                ctx.save();
+                ctx.translate(-size * 0.28, -size * 0.55);
+                ctx.rotate(-0.5 + armWobble);
+                ctx.fillRect(0, 0, size * 0.12, size * 0.35);
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(size * 0.28, -size * 0.55);
+                ctx.rotate(0.5 - armWobble);
+                ctx.fillRect(-size * 0.12, 0, size * 0.12, size * 0.35);
+                ctx.restore();
+
+                // Blocky head
                 ctx.fillStyle = headColor;
-                ctx.fillRect(-size * 0.18, -size * 0.9, size * 0.36, size * 0.32);
+                ctx.fillRect(-size * 0.2, -size * 0.95, size * 0.4, size * 0.38);
 
                 // Spitter has glowing mouth
                 if (z.type === 'spitter') {
@@ -1148,43 +1082,148 @@
         function drawGun() {
             const gun = GUNS[player.gun];
             const recoil = player.recoil;
+            const gunScale = Math.min(W, H) / 800;
+
             ctx.save();
-            ctx.translate(W/2, H + recoil * 18);
-            ctx.fillStyle = gun.color;
 
-            if (player.gun === 'pistol') { ctx.fillRect(-28, -95, 56, 40); ctx.fillRect(-20, -55, 40, 60); }
-            else if (player.gun === 'shotgun') { ctx.fillRect(-40, -120, 80, 35); ctx.fillRect(-28, -85, 56, 90); ctx.fillStyle = '#5c4033'; ctx.fillRect(-22, -45, 44, 50); }
-            else if (player.gun === 'smg') { ctx.fillRect(-35, -110, 70, 28); ctx.fillRect(-25, -82, 50, 85); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-10, -55, 20, 40); }
-            else if (player.gun === 'rifle') { ctx.fillRect(-45, -130, 90, 35); ctx.fillRect(-32, -95, 64, 100); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-14, -70, 24, 45); }
-            else if (player.gun === 'sniper') { ctx.fillRect(-40, -150, 80, 30); ctx.fillRect(-25, -120, 50, 125); ctx.fillStyle = '#3498db'; ctx.beginPath(); ctx.arc(0, -134, 9, 0, Math.PI * 2); ctx.fill(); }
-            else if (player.gun === 'minigun') { ctx.fillRect(-50, -140, 100, 50); ctx.fillRect(-36, -90, 72, 95); }
-            else if (player.gun === 'rocket') { ctx.fillRect(-55, -145, 110, 45); ctx.fillRect(-35, -100, 70, 105); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-45, -130, 20, 30); ctx.fillRect(25, -130, 20, 30); }
-            else if (player.gun === 'flamethrower') { ctx.fillRect(-50, -140, 100, 40); ctx.fillRect(-35, -100, 70, 105); ctx.fillStyle = '#ff4500'; ctx.beginPath(); ctx.arc(0, -135, 15, 0, Math.PI * 2); ctx.fill(); }
-            else if (player.gun === 'laser') { ctx.fillRect(-45, -135, 90, 35); ctx.fillRect(-30, -100, 60, 105); ctx.fillStyle = '#00ffff'; ctx.fillRect(-8, -125, 16, 25); ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 15; ctx.fillRect(-8, -125, 16, 25); ctx.shadowBlur = 0; }
+            // Gun position (bottom right like Last Run)
+            const gunX = W * 0.7;
+            const gunY = H - 50;
 
+            ctx.translate(gunX, gunY);
+            ctx.scale(gunScale, gunScale);
+
+            // Recoil animation
+            ctx.translate(0, -recoil * 30);
+            ctx.rotate(-recoil * 0.1);
+
+            // Muzzle flash (before gun so it appears at barrel)
             if (muzzleFlash > 0) {
-                ctx.fillStyle = `rgba(255,200,50,${muzzleFlash})`;
-                ctx.beginPath(); ctx.arc(0, -130, 30 + muzzleFlash * 20, 0, Math.PI * 2); ctx.fill();
+                ctx.save();
+                ctx.translate(80, -120);
+                const flashSize = 80 + Math.random() * 30;
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, flashSize);
+                gradient.addColorStop(0, 'rgba(255, 200, 50, 0.9)');
+                gradient.addColorStop(0.3, 'rgba(255, 150, 0, 0.6)');
+                gradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.3)');
+                gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, flashSize, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(0, 0, 15 + Math.random() * 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
             }
+
+            // Gun barrel (dark metal)
+            ctx.fillStyle = '#2A2A2A';
+            ctx.fillRect(0, -80, 120, 35);
+
+            // Barrel top detail
+            ctx.fillStyle = '#1A1A1A';
+            ctx.fillRect(10, -80, 100, 8);
+
+            // Barrel hole
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(115, -62, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Receiver (main body)
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-30, -70, 80, 50);
+
+            // Wooden stock
+            ctx.fillStyle = '#8B6914';
+            ctx.beginPath();
+            ctx.moveTo(-30, -70);
+            ctx.lineTo(-120, 20);
+            ctx.lineTo(-100, 40);
+            ctx.lineTo(-30, -20);
+            ctx.closePath();
+            ctx.fill();
+
+            // Stock grain detail
+            ctx.strokeStyle = '#6B4914';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-80, -20);
+            ctx.lineTo(-50, -50);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-90, 0);
+            ctx.lineTo(-60, -30);
+            ctx.stroke();
+
+            // Grip
+            ctx.fillStyle = '#8B6914';
+            ctx.fillRect(-10, -20, 25, 60);
+
+            // Trigger guard
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(15, 10, 20, 0, Math.PI);
+            ctx.stroke();
+
+            // Hand
+            ctx.fillStyle = '#D4A574';
+            ctx.fillRect(-5, 0, 35, 30);
+            ctx.fillRect(5, 25, 25, 15);
+
             ctx.restore();
-            ctx.fillStyle = '#d4a373';
-            ctx.fillRect(W/2 - 80, H - 75, 28, 50);
-            ctx.fillRect(W/2 + 52, H - 75, 28, 50);
+
+            // Ammo counter (bottom right)
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${24 * gunScale}px Arial`;
+            ctx.textAlign = 'right';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 4;
+            ctx.fillText(`${player.mag}/${gun.magSize}`, W - 30, H - 30);
+            ctx.shadowBlur = 0;
+
+            if (player.reloading) {
+                ctx.fillStyle = '#ffd700';
+                ctx.fillText('RELOADING...', W - 30, H - 60);
+            }
         }
 
         function drawCrosshair() {
-            const spread = GUNS[player.gun].spread * 180;
-            const gap = 8 + spread;
-            ctx.strokeStyle = activePowerups.damage ? '#FF4500' : '#fff';
-            ctx.lineWidth = 2;
+            // Fixed center crosshair (Last Run style)
+            const cx = W / 2;
+            const cy = H / 2;
+
+            // Red crosshair like Last Run screenshot
+            ctx.strokeStyle = activePowerups.damage ? '#FF8800' : '#FF4444';
+            ctx.lineWidth = 3;
+
+            const size = 15;
+            const gap = 6;
+
+            // Horizontal lines
             ctx.beginPath();
-            ctx.moveTo(mouseX, mouseY - gap - 15); ctx.lineTo(mouseX, mouseY - gap);
-            ctx.moveTo(mouseX, mouseY + gap); ctx.lineTo(mouseX, mouseY + gap + 15);
-            ctx.moveTo(mouseX - gap - 15, mouseY); ctx.lineTo(mouseX - gap, mouseY);
-            ctx.moveTo(mouseX + gap, mouseY); ctx.lineTo(mouseX + gap + 15, mouseY);
+            ctx.moveTo(cx - size - gap, cy);
+            ctx.lineTo(cx - gap, cy);
+            ctx.moveTo(cx + gap, cy);
+            ctx.lineTo(cx + size + gap, cy);
             ctx.stroke();
-            ctx.fillStyle = '#f00';
-            ctx.beginPath(); ctx.arc(mouseX, mouseY, 3, 0, Math.PI * 2); ctx.fill();
+
+            // Vertical lines
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - size - gap);
+            ctx.lineTo(cx, cy - gap);
+            ctx.moveTo(cx, cy + gap);
+            ctx.lineTo(cx, cy + size + gap);
+            ctx.stroke();
+
+            // Center dot
+            ctx.fillStyle = '#FF4444';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         function drawRunHUD() {
