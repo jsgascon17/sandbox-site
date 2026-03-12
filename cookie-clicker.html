@@ -610,7 +610,7 @@
                     buttonAction = canAfford ? `onclick="buySkin('${s.id}')"` : '';
                 }
 
-                const iconStyle = s.id === 'bunny' ? 'font-size: 2.5rem; filter: hue-rotate(180deg) saturate(1.5);' : 'font-size: 2.5rem;';
+                const iconStyle = s.id === 'bunny' ? 'font-size: 2.5rem; filter: hue-rotate(200deg) saturate(2) brightness(0.6);' : 'font-size: 2.5rem;';
                 return `
                     <div class="shop-item ${equipped ? 'equipped' : ''} ${!owned && !canAfford ? 'disabled' : ''}" ${buttonAction}>
                         <div class="shop-item-icon" style="${iconStyle}">${s.icon}</div>
