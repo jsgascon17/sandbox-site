@@ -210,10 +210,12 @@
         <div class="shop">
             <h2>🛒 Shop</h2>
             <div class="shop-tabs">
-                <button class="shop-tab active" onclick="showTab('buildings')">Buildings</button>
+                <button class="shop-tab active" onclick="showTab('clickers')">Clickers</button>
+                <button class="shop-tab" onclick="showTab('buildings')">Buildings</button>
                 <button class="shop-tab" onclick="showTab('upgrades')">Upgrades</button>
             </div>
-            <div id="buildingsList"></div>
+            <div id="clickersList"></div>
+            <div id="buildingsList" style="display: none;"></div>
             <div id="upgradesList" style="display: none;"></div>
         </div>
     </div>
@@ -291,18 +293,22 @@
             { id: 'timemachine', name: 'Time Machine', icon: '⏰', baseCost: 14000000000000, baseCps: 65000000, desc: 'Brings cookies from the past' },
         ];
 
-        // Upgrades
-        const UPGRADES = [
-            // Click upgrades
-            { id: 'fingers', name: 'Reinforced Fingers', icon: '💪', cost: 100, effect: 'click', mult: 2, desc: 'Clicking is twice as powerful' },
-            { id: 'ambidextrous', name: 'Ambidextrous', icon: '🤲', cost: 500, effect: 'click', mult: 2, desc: 'Clicking is twice as powerful again' },
-            { id: 'carpal', name: 'Carpal Tunnel', icon: '⌨️', cost: 10000, effect: 'click', mult: 2, desc: 'Even more clicking power' },
-            { id: 'mouseclick', name: 'Thousand Fingers', icon: '🖱️', cost: 100000, effect: 'click', mult: 2, desc: 'Clicks worth 16x base' },
-            { id: 'robofinger', name: 'Robot Fingers', icon: '🤖', cost: 1000000, effect: 'click', mult: 2, desc: 'Clicks worth 32x base' },
-            { id: 'laserfinger', name: 'Laser Fingers', icon: '🔫', cost: 10000000, effect: 'click', mult: 2, desc: 'Clicks worth 64x base' },
-            { id: 'quantumfinger', name: 'Quantum Fingers', icon: '⚛️', cost: 100000000, effect: 'click', mult: 2, desc: 'Clicks worth 128x base' },
-            { id: 'cosmicfinger', name: 'Cosmic Fingers', icon: '🌌', cost: 1000000000, effect: 'click', mult: 2, desc: 'Clicks worth 256x base' },
+        // Click Upgrades (for Clickers tab) - cheaper prices
+        const CLICK_UPGRADES = [
+            { id: 'fingers', name: 'Reinforced Fingers', icon: '💪', cost: 50, mult: 2, desc: '2x click power' },
+            { id: 'ambidextrous', name: 'Ambidextrous', icon: '🤲', cost: 200, mult: 2, desc: '4x click power' },
+            { id: 'carpal', name: 'Carpal Tunnel', icon: '⌨️', cost: 1000, mult: 2, desc: '8x click power' },
+            { id: 'mouseclick', name: 'Thousand Fingers', icon: '🖱️', cost: 5000, mult: 2, desc: '16x click power' },
+            { id: 'robofinger', name: 'Robot Fingers', icon: '🤖', cost: 25000, mult: 2, desc: '32x click power' },
+            { id: 'laserfinger', name: 'Laser Fingers', icon: '🔫', cost: 100000, mult: 2, desc: '64x click power' },
+            { id: 'quantumfinger', name: 'Quantum Fingers', icon: '⚛️', cost: 500000, mult: 2, desc: '128x click power' },
+            { id: 'cosmicfinger', name: 'Cosmic Fingers', icon: '🌌', cost: 2500000, mult: 2, desc: '256x click power' },
+            { id: 'divinefinger', name: 'Divine Touch', icon: '👼', cost: 10000000, mult: 2, desc: '512x click power' },
+            { id: 'infinityfinger', name: 'Infinity Gauntlet', icon: '🧤', cost: 50000000, mult: 2, desc: '1024x click power' },
+        ];
 
+        // Building Upgrades (for Upgrades tab)
+        const UPGRADES = [
             // Cursor upgrades
             { id: 'cursor1', name: 'Faster Cursors', icon: '👆', cost: 100, effect: 'cursor', mult: 2, desc: 'Cursors are twice as efficient' },
             { id: 'cursor2', name: 'Titanium Mouse', icon: '🖲️', cost: 500, effect: 'cursor', mult: 2, desc: 'Cursors are twice as efficient again' },
@@ -386,6 +392,7 @@
             clickPower: 1,
             buildings: {},
             upgrades: [],
+            clickUpgrades: [],
             achievements: [],
             goldenClicked: 0,
             redeemedCodes: [],
@@ -433,8 +440,8 @@
         // Calculate click power
         function calculateClickPower() {
             let power = 1;
-            UPGRADES.forEach(u => {
-                if (saveData.upgrades.includes(u.id) && u.effect === 'click') {
+            CLICK_UPGRADES.forEach(u => {
+                if (saveData.clickUpgrades.includes(u.id)) {
                     power *= u.mult;
                 }
             });
@@ -463,9 +470,32 @@
             const milkLevel = Math.min(saveData.achievements.length * 4, 40);
             document.getElementById('milk').style.height = milkLevel + '%';
 
+            renderClickers();
             renderBuildings();
             renderUpgrades();
             renderAchievements();
+        }
+
+        function renderClickers() {
+            const list = document.getElementById('clickersList');
+            const available = CLICK_UPGRADES.filter(u => !saveData.clickUpgrades.includes(u.id));
+            list.innerHTML = available.map(u => {
+                const canAfford = saveData.cookies >= u.cost;
+                return `
+                    <div class="shop-item ${canAfford ? '' : 'disabled'}" onclick="buyClicker('${u.id}')">
+                        <div class="shop-item-icon">${u.icon}</div>
+                        <div class="shop-item-info">
+                            <div class="shop-item-name">${u.name}</div>
+                            <div class="shop-item-desc">${u.desc}</div>
+                        </div>
+                        <div class="shop-item-cost">🍪 ${formatNumber(u.cost)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            if (available.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">All click upgrades purchased!</p>';
+            }
         }
 
         function renderBuildings() {
@@ -531,8 +561,22 @@
         function showTab(tab) {
             document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
+            document.getElementById('clickersList').style.display = tab === 'clickers' ? 'block' : 'none';
             document.getElementById('buildingsList').style.display = tab === 'buildings' ? 'block' : 'none';
             document.getElementById('upgradesList').style.display = tab === 'upgrades' ? 'block' : 'none';
+        }
+
+        // Buy clicker upgrade
+        function buyClicker(id) {
+            initAudio();
+            const clicker = CLICK_UPGRADES.find(u => u.id === id);
+            if (saveData.cookies >= clicker.cost && !saveData.clickUpgrades.includes(id)) {
+                saveData.cookies -= clicker.cost;
+                saveData.clickUpgrades.push(id);
+                playSound('buy');
+                updateUI();
+                saveSaveData();
+            }
         }
 
         // Buy building
