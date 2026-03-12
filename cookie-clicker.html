@@ -73,6 +73,7 @@
         }
         .shop-item:hover { background: #eeeeee; border-color: #8B4513; }
         .shop-item.disabled { opacity: 0.5; cursor: not-allowed; }
+        .shop-item.equipped { background: #E8F5E9; border-color: #4CAF50; }
         .shop-item-icon { font-size: 1.8rem; }
         .shop-item-info { flex: 1; }
         .shop-item-name { font-weight: bold; color: #8B4513; font-size: 0.9rem; }
@@ -213,10 +214,12 @@
                 <button class="shop-tab active" onclick="showTab('clickers')">Clickers</button>
                 <button class="shop-tab" onclick="showTab('buildings')">Buildings</button>
                 <button class="shop-tab" onclick="showTab('upgrades')">Upgrades</button>
+                <button class="shop-tab" onclick="showTab('skins')">Skins</button>
             </div>
             <div id="clickersList"></div>
             <div id="buildingsList" style="display: none;"></div>
             <div id="upgradesList" style="display: none;"></div>
+            <div id="skinsList" style="display: none;"></div>
         </div>
     </div>
 
@@ -378,10 +381,23 @@
             { id: 'golden10', name: 'Golden Touch', icon: '🌟', desc: 'Click 10 golden cookies', check: s => s.goldenClicked >= 10 },
         ];
 
+        // Cookie Skins
+        const SKINS = [
+            { id: 'default', name: 'Classic Cookie', icon: '🍪', desc: 'The original cookie' },
+            { id: 'bunny', name: 'Bunny Cookie', icon: '🐰', desc: 'A cute bunny cookie!', code: true },
+            { id: 'choco', name: 'Chocolate Chip', icon: '🍫', desc: 'Extra chocolatey', price: 5000 },
+            { id: 'rainbow', name: 'Rainbow Cookie', icon: '🌈', desc: 'Taste the rainbow', price: 25000 },
+            { id: 'gold', name: 'Golden Cookie', icon: '🥇', desc: 'Made of pure gold', price: 100000 },
+            { id: 'star', name: 'Star Cookie', icon: '⭐', desc: 'Reach for the stars', price: 500000 },
+            { id: 'heart', name: 'Love Cookie', icon: '❤️', desc: 'Baked with love', price: 1000000 },
+            { id: 'alien', name: 'Alien Cookie', icon: '👽', desc: 'Out of this world', price: 10000000 },
+        ];
+
         // Codes
         const CODES = {
             'i love cookies': { reward: 200, message: 'You got 200 cookies!' },
             'bluebunny': { reward: 10000, message: 'You got 10,000 cookies!' },
+            'cookiebits': { skin: 'bunny', message: 'You unlocked the Bunny Cookie skin!' },
         };
 
         // Game State
@@ -396,6 +412,8 @@
             achievements: [],
             goldenClicked: 0,
             redeemedCodes: [],
+            ownedSkins: ['default'],
+            equippedSkin: 'default',
             startTime: Date.now()
         };
 
@@ -482,7 +500,9 @@
             renderClickers();
             renderBuildings();
             renderUpgrades();
+            renderSkins();
             renderAchievements();
+            updateCookieDisplay();
         }
 
         function renderClickers() {
@@ -566,6 +586,71 @@
             }).join('');
         }
 
+        function renderSkins() {
+            const list = document.getElementById('skinsList');
+            list.innerHTML = SKINS.map(s => {
+                const owned = saveData.ownedSkins.includes(s.id);
+                const equipped = saveData.equippedSkin === s.id;
+                const canAfford = s.price ? saveData.cookies >= s.price : false;
+                const isCodeOnly = s.code && !owned;
+
+                let buttonText = '';
+                let buttonAction = '';
+                if (equipped) {
+                    buttonText = '✓ Equipped';
+                    buttonAction = '';
+                } else if (owned) {
+                    buttonText = 'Equip';
+                    buttonAction = `onclick="equipSkin('${s.id}')"`;
+                } else if (isCodeOnly) {
+                    buttonText = '🔒 Code Only';
+                    buttonAction = '';
+                } else if (s.price) {
+                    buttonText = `🍪 ${formatNumber(s.price)}`;
+                    buttonAction = canAfford ? `onclick="buySkin('${s.id}')"` : '';
+                }
+
+                return `
+                    <div class="shop-item ${equipped ? 'equipped' : ''} ${!owned && !canAfford ? 'disabled' : ''}" ${buttonAction}>
+                        <div class="shop-item-icon" style="font-size: 2.5rem;">${s.icon}</div>
+                        <div class="shop-item-info">
+                            <div class="shop-item-name">${s.name}</div>
+                            <div class="shop-item-desc">${s.desc}</div>
+                        </div>
+                        <div class="shop-item-cost" style="${equipped ? 'background: #4CAF50;' : ''}">${buttonText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function equipSkin(id) {
+            if (saveData.ownedSkins.includes(id)) {
+                saveData.equippedSkin = id;
+                updateCookieDisplay();
+                playSound('buy');
+                updateUI();
+                saveSaveData();
+            }
+        }
+
+        function buySkin(id) {
+            const skin = SKINS.find(s => s.id === id);
+            if (skin.price && saveData.cookies >= skin.price && !saveData.ownedSkins.includes(id)) {
+                saveData.cookies -= skin.price;
+                saveData.ownedSkins.push(id);
+                saveData.equippedSkin = id;
+                updateCookieDisplay();
+                playSound('buy');
+                updateUI();
+                saveSaveData();
+            }
+        }
+
+        function updateCookieDisplay() {
+            const skin = SKINS.find(s => s.id === saveData.equippedSkin) || SKINS[0];
+            document.getElementById('cookie').textContent = skin.icon;
+        }
+
         // Tab switching
         function showTab(tab) {
             document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active'));
@@ -573,6 +658,7 @@
             document.getElementById('clickersList').style.display = tab === 'clickers' ? 'block' : 'none';
             document.getElementById('buildingsList').style.display = tab === 'buildings' ? 'block' : 'none';
             document.getElementById('upgradesList').style.display = tab === 'upgrades' ? 'block' : 'none';
+            document.getElementById('skinsList').style.display = tab === 'skins' ? 'block' : 'none';
         }
 
         // Buy clicker upgrade
@@ -739,6 +825,9 @@
             const codeData = CODES[code];
             if (codeData.reward) {
                 saveData.cookies += codeData.reward;
+            }
+            if (codeData.skin && !saveData.ownedSkins.includes(codeData.skin)) {
+                saveData.ownedSkins.push(codeData.skin);
             }
             saveData.redeemedCodes.push(code);
 
