@@ -282,6 +282,53 @@
             50% { transform: translateX(2px) rotate(2deg); }
         }
 
+        /* Cookie Clicker */
+        .cookie-preview {
+            background: linear-gradient(180deg, #8B4513 0%, #D2691E 50%, #DEB887 100%);
+        }
+
+        .cookie-preview .icon {
+            font-size: 5rem;
+            animation: cookiePulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes cookiePulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Knife Hit */
+        .knife-preview {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .knife-preview .icon {
+            font-size: 4rem;
+            color: #e94560;
+            text-shadow: 0 0 20px #e94560;
+            animation: knifeThrow 1s ease-in-out infinite;
+        }
+
+        @keyframes knifeThrow {
+            0%, 100% { transform: translateY(20px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Doodle Jump */
+        .doodle-preview {
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 50%, #4caf50 100%);
+        }
+
+        .doodle-preview .icon {
+            font-size: 4rem;
+            animation: doodleJump 0.6s ease-in-out infinite;
+        }
+
+        @keyframes doodleJump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
         .game-info {
             padding: 25px;
         }
@@ -779,6 +826,66 @@
                         <span class="tag">Action</span>
                         <span class="tag">Combat</span>
                         <span class="tag">Vehicles</span>
+                    </div>
+                    <span class="play-btn">Play Now</span>
+                </div>
+            </a>
+
+            <!-- Cookie Clicker -->
+            <a href="cookie-clicker.html" class="game-card">
+                <div class="game-preview cookie-preview">
+                    <span class="icon">🍪</span>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">Cookie Clicker</h2>
+                    <p class="game-description">
+                        Click cookies, buy upgrades, hire grandmas! The classic idle
+                        clicker game. Bake billions of cookies and rule the bakery!
+                    </p>
+                    <div class="game-tags">
+                        <span class="tag">Clicker</span>
+                        <span class="tag">Idle</span>
+                        <span class="tag">Upgrades</span>
+                    </div>
+                    <span class="play-btn">Play Now</span>
+                </div>
+            </a>
+
+            <!-- Knife Hit -->
+            <a href="knife-hit.html" class="game-card">
+                <div class="game-preview knife-preview">
+                    <span class="icon">🔪</span>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">Knife Hit</h2>
+                    <p class="game-description">
+                        Throw knives at the spinning log! Don't hit other knives
+                        or it's game over. Hit apples for bonus coins!
+                    </p>
+                    <div class="game-tags">
+                        <span class="tag">Timing</span>
+                        <span class="tag">Reflex</span>
+                        <span class="tag">Stages</span>
+                    </div>
+                    <span class="play-btn">Play Now</span>
+                </div>
+            </a>
+
+            <!-- Doodle Jump -->
+            <a href="doodle-jump.html" class="game-card">
+                <div class="game-preview doodle-preview">
+                    <span class="icon">🐸</span>
+                </div>
+                <div class="game-info">
+                    <h2 class="game-title">Doodle Jump</h2>
+                    <p class="game-description">
+                        Jump from platform to platform! Avoid breaking platforms,
+                        grab jetpacks, and see how high you can climb!
+                    </p>
+                    <div class="game-tags">
+                        <span class="tag">Endless</span>
+                        <span class="tag">Platformer</span>
+                        <span class="tag">High Score</span>
                     </div>
                     <span class="play-btn">Play Now</span>
                 </div>
