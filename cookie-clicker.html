@@ -127,6 +127,28 @@
             transition: height 2s ease; z-index: 1; pointer-events: none;
         }
 
+        .code-box {
+            margin-top: 20px; padding: 15px; background: rgba(139, 69, 19, 0.1);
+            border-radius: 15px; border: 2px dashed #8B4513;
+        }
+        .code-box h3 { color: #8B4513; font-size: 0.9rem; margin-bottom: 10px; }
+        .code-input-row { display: flex; gap: 8px; }
+        .code-input {
+            flex: 1; padding: 8px 12px; border: 2px solid #DEB887; border-radius: 8px;
+            font-size: 0.9rem; background: #fff; color: #8B4513;
+        }
+        .code-input:focus { outline: none; border-color: #8B4513; }
+        .code-btn {
+            padding: 8px 15px; background: #8B4513; color: #fff; border: none;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .code-btn:hover { background: #A0522D; }
+        .code-message {
+            margin-top: 8px; font-size: 0.8rem; min-height: 1.2em;
+        }
+        .code-message.success { color: #4CAF50; }
+        .code-message.error { color: #e74c3c; }
+
         .back-btn {
             position: fixed; top: 20px; left: 20px;
             background: rgba(255,255,255,0.9); color: #8B4513; padding: 10px 20px;
@@ -174,6 +196,15 @@
         <div class="click-area">
             <div id="cookie">🍪</div>
             <p style="margin-top: 15px; color: #8B4513; font-size: 0.9rem;">Click the cookie!</p>
+
+            <div class="code-box">
+                <h3>🎁 Redeem Code</h3>
+                <div class="code-input-row">
+                    <input type="text" class="code-input" id="codeInput" placeholder="Enter code...">
+                    <button class="code-btn" onclick="redeemCode()">Redeem</button>
+                </div>
+                <div class="code-message" id="codeMessage"></div>
+            </div>
         </div>
 
         <div class="shop">
@@ -282,6 +313,11 @@
             { id: 'golden10', name: 'Golden Touch', icon: '🌟', desc: 'Click 10 golden cookies', check: s => s.goldenClicked >= 10 },
         ];
 
+        // Codes
+        const CODES = {
+            'i love cookies': { reward: 200, message: 'You got 200 cookies!' },
+        };
+
         // Game State
         let saveData = {
             cookies: 0,
@@ -292,6 +328,7 @@
             upgrades: [],
             achievements: [],
             goldenClicked: 0,
+            redeemedCodes: [],
             startTime: Date.now()
         };
 
@@ -557,6 +594,50 @@
             });
         }
 
+        // Redeem codes
+        function redeemCode() {
+            const input = document.getElementById('codeInput');
+            const message = document.getElementById('codeMessage');
+            const code = input.value.toLowerCase().trim();
+
+            if (!code) {
+                message.textContent = 'Please enter a code!';
+                message.className = 'code-message error';
+                return;
+            }
+
+            // Check if code exists
+            if (!CODES[code]) {
+                message.textContent = 'Invalid code!';
+                message.className = 'code-message error';
+                input.value = '';
+                return;
+            }
+
+            // Check if already redeemed
+            if (saveData.redeemedCodes.includes(code)) {
+                message.textContent = 'Code already redeemed!';
+                message.className = 'code-message error';
+                input.value = '';
+                return;
+            }
+
+            // Redeem the code
+            const codeData = CODES[code];
+            if (codeData.reward) {
+                saveData.cookies += codeData.reward;
+            }
+            saveData.redeemedCodes.push(code);
+
+            playSound('golden');
+            message.textContent = codeData.message;
+            message.className = 'code-message success';
+            input.value = '';
+
+            updateStats();
+            saveSaveData();
+        }
+
         // Game loop - only update stats, don't rebuild shop
         function gameLoop() {
             const cps = calculateCps();
@@ -582,12 +663,20 @@
             lastMousePos = { x: e.clientX, y: e.clientY };
         });
 
-        // Spacebar to click cookie when hovering
+        // Spacebar to click cookie when hovering (but not when typing in input)
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && mouseOverCookie) {
+            const isTyping = document.activeElement.tagName === 'INPUT';
+            if (e.code === 'Space' && mouseOverCookie && !isTyping) {
                 e.preventDefault();
                 // Create a fake event with the last known mouse position
                 clickCookie({ clientX: lastMousePos.x, clientY: lastMousePos.y });
+            }
+        });
+
+        // Enter key to submit code
+        document.getElementById('codeInput').addEventListener('keydown', (e) => {
+            if (e.code === 'Enter') {
+                redeemCode();
             }
         });
 
