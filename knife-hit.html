@@ -1120,14 +1120,25 @@
 
                 // Check if knife reached log
                 if (knifeY <= logCenterY + gameState.logRadius + 40) {
-                    // Check collision with existing knives
-                    const knifeAngle = -Math.PI / 2; // Coming from bottom
+                    // Calculate where the knife will stick (log-relative angle)
+                    const newKnifeAngle = -Math.PI / 2 - gameState.logAngle;
+
+                    // Normalize angle to 0-2π range
+                    const normalize = (angle) => {
+                        let a = angle % (Math.PI * 2);
+                        if (a < 0) a += Math.PI * 2;
+                        return a;
+                    };
+
+                    const normalizedNew = normalize(newKnifeAngle);
+
+                    // Check collision - compare log-relative angles directly
                     const hitKnife = gameState.stuckKnives.some(stuck => {
-                        const stuckAngle = stuck.angle + gameState.logAngle;
-                        const normalizedStuck = ((stuckAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-                        const normalizedNew = ((knifeAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-                        const diff = Math.abs(normalizedStuck - normalizedNew);
-                        return diff < 0.25 || diff > Math.PI * 2 - 0.25;
+                        const normalizedStuck = normalize(stuck.angle);
+                        let diff = Math.abs(normalizedNew - normalizedStuck);
+                        // Handle wrap-around (e.g., comparing 0.1 and 6.2)
+                        if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                        return diff < 0.25; // Within ~14 degrees
                     });
 
                     if (hitKnife) {
@@ -1147,8 +1158,9 @@
                     const skin = getCurrentSkin();
                     spawnParticles(logCenterX, logCenterY - gameState.logRadius, skin.color, 8);
 
+                    // Store with normalized angle
                     gameState.stuckKnives.push({
-                        angle: -Math.PI / 2 - gameState.logAngle
+                        angle: normalizedNew
                     });
 
                     // Increment combo
