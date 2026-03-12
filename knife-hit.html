@@ -1120,9 +1120,6 @@
 
                 // Check if knife reached log
                 if (knifeY <= logCenterY + gameState.logRadius + 40) {
-                    // Calculate where the knife will stick (log-relative angle)
-                    const newKnifeAngle = -Math.PI / 2 - gameState.logAngle;
-
                     // Normalize angle to 0-2π range
                     const normalize = (angle) => {
                         let a = angle % (Math.PI * 2);
@@ -1130,16 +1127,31 @@
                         return a;
                     };
 
-                    const normalizedNew = normalize(newKnifeAngle);
+                    // The knife enters at the bottom of the log (world angle 3π/2)
+                    const entryAngle = Math.PI * 1.5; // 3π/2 = bottom of log
 
-                    // Check collision - compare log-relative angles directly
+                    // Check collision - only with knives currently on the FRONT (visible) half
                     const hitKnife = gameState.stuckKnives.some(stuck => {
-                        const normalizedStuck = normalize(stuck.angle);
-                        let diff = Math.abs(normalizedNew - normalizedStuck);
-                        // Handle wrap-around (e.g., comparing 0.1 and 6.2)
+                        // Get world-space position of this stuck knife
+                        const worldAngle = normalize(stuck.angle + gameState.logAngle);
+
+                        // Only check knives on the front half (bottom half, from π to 2π)
+                        // This is the visible side facing the player
+                        const isOnFrontHalf = worldAngle > Math.PI * 0.75 && worldAngle < Math.PI * 2.25;
+                        // Handle wrap-around: also include 0 to π/4 (which is 2π to 2.25π wrapped)
+                        const isOnFront = isOnFrontHalf || worldAngle < Math.PI * 0.25;
+
+                        if (!isOnFront) return false; // Ignore knives on the back
+
+                        // Check if this knife is at the entry point
+                        let diff = Math.abs(worldAngle - entryAngle);
                         if (diff > Math.PI) diff = Math.PI * 2 - diff;
-                        return diff < 0.25; // Within ~14 degrees
+                        return diff < 0.2; // Tighter collision (~11 degrees)
                     });
+
+                    // Store the knife angle for later
+                    const newKnifeAngle = -Math.PI / 2 - gameState.logAngle;
+                    const normalizedNew = normalize(newKnifeAngle);
 
                     if (hitKnife) {
                         // Game over - reset combo
