@@ -83,7 +83,7 @@
             position: fixed; top: 20px; right: 20px;
             background: rgba(255,255,255,0.9); color: #2e7d32; padding: 10px 20px;
             border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
-            z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 250; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .shop-btn:hover { transform: scale(1.05); }
 
@@ -91,7 +91,7 @@
             position: fixed; top: 20px; left: 20px;
             background: rgba(255,255,255,0.9); color: #2e7d32; padding: 10px 20px;
             border-radius: 10px; text-decoration: none; font-weight: bold;
-            z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 250; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         .back-btn:hover { transform: scale(1.05); }
 
@@ -102,10 +102,10 @@
         }
         .shop-overlay.hidden { display: none; }
         .shop-grid {
-            display: grid; grid-template-columns: repeat(4, 90px); gap: 15px; margin: 30px 0;
+            display: grid; grid-template-columns: repeat(5, 80px); gap: 12px; margin: 30px 0;
         }
         .skin-item {
-            width: 90px; height: 90px; background: rgba(255,255,255,0.15);
+            width: 80px; height: 80px; background: rgba(255,255,255,0.15);
             border-radius: 15px; display: flex; flex-direction: column;
             align-items: center; justify-content: center; cursor: pointer;
             border: 3px solid transparent; transition: all 0.2s;
@@ -124,11 +124,96 @@
             animation: pulse 0.5s ease-in-out infinite alternate;
         }
         @keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.1); } }
+
+        .stats-btn {
+            position: fixed; top: 60px; left: 20px;
+            background: rgba(255,255,255,0.9); color: #2e7d32; padding: 10px 20px;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
+            z-index: 250; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .stats-btn:hover { transform: scale(1.05); }
+
+        .codes-btn {
+            position: fixed; top: 100px; left: 20px;
+            background: rgba(255,255,255,0.9); color: #2e7d32; padding: 10px 20px;
+            border: none; border-radius: 10px; cursor: pointer; font-weight: bold;
+            z-index: 250; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .codes-btn:hover { transform: scale(1.05); }
+
+        .sound-btn {
+            position: fixed; top: 60px; right: 20px;
+            background: rgba(255,255,255,0.9); color: #2e7d32; padding: 8px 15px;
+            border: none; border-radius: 10px; cursor: pointer; font-size: 1.2rem;
+            z-index: 250; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .sound-btn:hover { transform: scale(1.05); }
+
+        .stats-overlay, .codes-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 125, 50, 0.98); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 300;
+            overflow-y: auto; padding: 20px;
+        }
+        .stats-overlay.hidden, .codes-overlay.hidden { display: none; }
+
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
+            margin: 20px 0; max-width: 350px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.15); padding: 15px; border-radius: 15px; text-align: center;
+        }
+        .stat-card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+        .stat-card .value { font-size: 1.5rem; font-weight: bold; color: #ffeb3b; }
+        .stat-card .label { font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-top: 5px; }
+
+        .achievements-grid {
+            display: grid; grid-template-columns: repeat(4, 70px); gap: 10px; margin: 15px 0;
+        }
+        .achievement-item {
+            width: 70px; height: 70px; background: rgba(255,255,255,0.1);
+            border-radius: 12px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            border: 2px solid transparent; opacity: 0.4;
+        }
+        .achievement-item.unlocked { opacity: 1; border-color: #ffeb3b; background: rgba(255,235,59,0.15); }
+        .achievement-item .icon { font-size: 1.5rem; }
+        .achievement-item .name { font-size: 0.5rem; color: rgba(255,255,255,0.8); margin-top: 3px; text-align: center; }
+
+        .achievement-popup {
+            position: fixed; top: 80px; right: 20px;
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            color: #2e7d32; padding: 15px 25px; border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.3);
+            animation: slideInRight 0.5s ease-out, slideOutRight 0.5s ease-in 2.5s forwards;
+            z-index: 400;
+        }
+        .achievement-popup h3 { font-size: 0.8rem; margin-bottom: 5px; }
+        .achievement-popup p { font-size: 1rem; font-weight: bold; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        .code-input {
+            background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.3);
+            color: #fff; padding: 15px 20px; border-radius: 10px;
+            font-size: 1.2rem; text-align: center; width: 250px;
+            margin: 20px 0;
+        }
+        .code-input:focus { outline: none; border-color: #ffeb3b; }
+        .code-input::placeholder { color: rgba(255,255,255,0.5); }
+        .code-message {
+            color: #ffeb3b; font-size: 1.1rem; min-height: 30px; margin-bottom: 20px;
+        }
+        .code-message.error { color: #ff8a80; }
     </style>
 </head>
 <body>
     <a href="index.html" class="back-btn">← Back</a>
+    <button class="stats-btn" onclick="showStats()">📊 Stats</button>
+    <button class="codes-btn" onclick="showCodes()">🎁 Codes</button>
     <button class="shop-btn" onclick="showShop()">🎨 Skins</button>
+    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊</button>
 
     <div class="hud">
         <div class="hud-item">
@@ -183,6 +268,27 @@
         <button class="btn" onclick="hideShop()">CLOSE</button>
     </div>
 
+    <!-- Stats -->
+    <div class="stats-overlay hidden" id="statsScreen">
+        <h1 style="color: #fff;">📊 Statistics</h1>
+        <div class="stats-grid" id="statsGrid"></div>
+        <h2 style="color: #ffeb3b; margin-top: 15px;">🏆 Achievements</h2>
+        <div class="achievements-grid" id="achievementsGrid"></div>
+        <button class="btn" onclick="hideStats()" style="margin-top: 20px;">CLOSE</button>
+    </div>
+
+    <!-- Codes -->
+    <div class="codes-overlay hidden" id="codesScreen">
+        <h1 style="color: #fff;">🎁 Redeem Code</h1>
+        <p style="color: rgba(255,255,255,0.8);">Enter a code to get rewards!</p>
+        <input type="text" class="code-input" id="codeInput" placeholder="Enter code..." maxlength="30">
+        <div class="code-message" id="codeMessage"></div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn" onclick="redeemCode()">REDEEM</button>
+            <button class="btn" onclick="hideCodes()" style="background: linear-gradient(135deg, #81c784, #66bb6a);">CLOSE</button>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -193,7 +299,7 @@
         function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); }
 
         function playSound(type) {
-            if (!audioCtx) return;
+            if (!audioCtx || !saveData.soundEnabled) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
@@ -266,6 +372,41 @@
             { id: 'unicorn', name: 'Unicorn', icon: '🦄', color: '#f48fb1', price: 200 },
             { id: 'dragon', name: 'Dragon', icon: '🐲', color: '#ff7043', price: 250 },
             { id: 'ghost', name: 'Ghost', icon: '👻', color: '#e0e0e0', price: 300 },
+            { id: 'cat', name: 'Cat', icon: '🐱', color: '#ffcc80', price: 75 },
+            { id: 'dog', name: 'Dog', icon: '🐶', color: '#bcaaa4', price: 75 },
+            { id: 'panda', name: 'Panda', icon: '🐼', color: '#ffffff', price: 150 },
+            { id: 'penguin', name: 'Penguin', icon: '🐧', color: '#37474f', price: 125 },
+            { id: 'chicken', name: 'Chicken', icon: '🐔', color: '#fff9c4', price: 100 },
+            { id: 'owl', name: 'Owl', icon: '🦉', color: '#8d6e63', price: 175 },
+            { id: 'fox', name: 'Fox', icon: '🦊', color: '#ff8a65', price: 200 },
+            { id: 'astronaut', name: 'Astronaut', icon: '👨‍🚀', color: '#eceff1', price: 350 },
+            { id: 'wizard', name: 'Wizard', icon: '🧙', color: '#7e57c2', price: 400 },
+            { id: 'superhero', name: 'Superhero', icon: '🦸', color: '#e53935', price: 500 },
+        ];
+
+        // Codes
+        const CODES = {
+            'jumpstart': { coins: 100, message: 'You got 100 coins!' },
+            'highjump': { coins: 250, message: 'You got 250 coins!' },
+            'tothemoon': { coins: 500, message: 'You got 500 coins!' },
+            'spacefrog': { skin: 'astronaut', message: 'You unlocked the Astronaut!' },
+            'wizardry': { skin: 'wizard', message: 'You unlocked the Wizard!' },
+        };
+
+        // Achievements
+        const ACHIEVEMENTS = [
+            { id: 'first_jump', name: 'First Steps', icon: '👶', desc: 'Play your first game', check: s => s.totalGames >= 1 },
+            { id: 'height_100', name: 'Getting High', icon: '📏', desc: 'Reach 100m', check: s => s.highScore >= 100 },
+            { id: 'height_500', name: 'Sky High', icon: '☁️', desc: 'Reach 500m', check: s => s.highScore >= 500 },
+            { id: 'height_1000', name: 'To The Clouds', icon: '🌤️', desc: 'Reach 1000m', check: s => s.highScore >= 1000 },
+            { id: 'height_2500', name: 'Stratosphere', icon: '✈️', desc: 'Reach 2500m', check: s => s.highScore >= 2500 },
+            { id: 'height_5000', name: 'Space Bound', icon: '🚀', desc: 'Reach 5000m', check: s => s.highScore >= 5000 },
+            { id: 'coins_100', name: 'Coin Collector', icon: '🪙', desc: 'Collect 100 total coins', check: s => s.totalCoins >= 100 },
+            { id: 'coins_500', name: 'Coin Hoarder', icon: '💰', desc: 'Collect 500 total coins', check: s => s.totalCoins >= 500 },
+            { id: 'games_10', name: 'Regular Jumper', icon: '🎮', desc: 'Play 10 games', check: s => s.totalGames >= 10 },
+            { id: 'games_50', name: 'Dedicated', icon: '🏅', desc: 'Play 50 games', check: s => s.totalGames >= 50 },
+            { id: 'skins_5', name: 'Fashionista', icon: '👗', desc: 'Own 5 skins', check: s => s.ownedSkins.length >= 5 },
+            { id: 'skins_all', name: 'Collector', icon: '🏆', desc: 'Own all skins', check: s => s.ownedSkins.length >= SKINS.length },
         ];
 
         // Platform types
@@ -282,7 +423,13 @@
             highScore: 0,
             ownedSkins: ['default'],
             equippedSkin: 'default',
-            totalGames: 0
+            totalGames: 0,
+            totalCoins: 0,
+            totalHeight: 0,
+            totalJumps: 0,
+            achievements: [],
+            redeemedCodes: [],
+            soundEnabled: true
         };
 
         let gameState = {
@@ -550,8 +697,10 @@
                     coin.collected = true;
                     gameState.coinsThisGame++;
                     saveData.coins++;
+                    saveData.totalCoins++;
                     playSound('coin');
                     updateUI();
+                    checkAchievements();
                 }
             });
 
@@ -706,10 +855,12 @@
             gameState.gameOver = true;
 
             saveData.totalGames++;
+            saveData.totalHeight += gameState.maxHeight;
             if (gameState.score > saveData.highScore) {
                 saveData.highScore = gameState.score;
             }
             saveSaveData();
+            checkAchievements();
 
             document.getElementById('finalScore').textContent = gameState.score;
             document.getElementById('finalHeight').textContent = gameState.maxHeight + 'm';
@@ -749,10 +900,129 @@
                 saveData.coins -= skin.price;
                 saveData.ownedSkins.push(id);
                 saveData.equippedSkin = id;
+                checkAchievements();
             }
             saveSaveData();
             updateUI();
             showShop();
+        }
+
+        // Sound toggle
+        function toggleSound() {
+            saveData.soundEnabled = !saveData.soundEnabled;
+            document.getElementById('soundBtn').textContent = saveData.soundEnabled ? '🔊' : '🔇';
+            saveSaveData();
+        }
+
+        function updateSoundButton() {
+            document.getElementById('soundBtn').textContent = saveData.soundEnabled ? '🔊' : '🔇';
+        }
+
+        // Stats
+        function showStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card"><div class="icon">🎮</div><div class="value">${saveData.totalGames}</div><div class="label">Games Played</div></div>
+                <div class="stat-card"><div class="icon">🏆</div><div class="value">${saveData.highScore}m</div><div class="label">Best Height</div></div>
+                <div class="stat-card"><div class="icon">📏</div><div class="value">${saveData.totalHeight}m</div><div class="label">Total Height</div></div>
+                <div class="stat-card"><div class="icon">🪙</div><div class="value">${saveData.totalCoins}</div><div class="label">Total Coins</div></div>
+                <div class="stat-card"><div class="icon">💰</div><div class="value">${saveData.coins}</div><div class="label">Current Coins</div></div>
+                <div class="stat-card"><div class="icon">🎨</div><div class="value">${saveData.ownedSkins.length}/${SKINS.length}</div><div class="label">Skins Owned</div></div>
+            `;
+
+            const achievementsGrid = document.getElementById('achievementsGrid');
+            achievementsGrid.innerHTML = ACHIEVEMENTS.map(a => {
+                const unlocked = saveData.achievements.includes(a.id);
+                return `
+                    <div class="achievement-item ${unlocked ? 'unlocked' : ''}" title="${a.desc}">
+                        <div class="icon">${unlocked ? a.icon : '🔒'}</div>
+                        <div class="name">${a.name}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('statsScreen').classList.remove('hidden');
+        }
+
+        function hideStats() {
+            document.getElementById('statsScreen').classList.add('hidden');
+        }
+
+        // Codes
+        function showCodes() {
+            document.getElementById('codeInput').value = '';
+            document.getElementById('codeMessage').textContent = '';
+            document.getElementById('codeMessage').className = 'code-message';
+            document.getElementById('codesScreen').classList.remove('hidden');
+        }
+
+        function hideCodes() {
+            document.getElementById('codesScreen').classList.add('hidden');
+        }
+
+        function redeemCode() {
+            const input = document.getElementById('codeInput');
+            const messageEl = document.getElementById('codeMessage');
+            const code = input.value.toLowerCase().trim();
+
+            if (!code) {
+                messageEl.textContent = 'Please enter a code!';
+                messageEl.className = 'code-message error';
+                return;
+            }
+
+            if (saveData.redeemedCodes.includes(code)) {
+                messageEl.textContent = 'Code already redeemed!';
+                messageEl.className = 'code-message error';
+                return;
+            }
+
+            const codeData = CODES[code];
+            if (!codeData) {
+                messageEl.textContent = 'Invalid code!';
+                messageEl.className = 'code-message error';
+                return;
+            }
+
+            saveData.redeemedCodes.push(code);
+
+            if (codeData.coins) {
+                saveData.coins += codeData.coins;
+                saveData.totalCoins += codeData.coins;
+            }
+
+            if (codeData.skin && !saveData.ownedSkins.includes(codeData.skin)) {
+                saveData.ownedSkins.push(codeData.skin);
+            }
+
+            saveSaveData();
+            updateUI();
+            checkAchievements();
+            playSound('coin');
+
+            messageEl.textContent = codeData.message;
+            messageEl.className = 'code-message';
+            input.value = '';
+        }
+
+        // Achievements
+        function showAchievementPopup(achievement) {
+            const popup = document.createElement('div');
+            popup.className = 'achievement-popup';
+            popup.innerHTML = `<h3>🏆 Achievement Unlocked!</h3><p>${achievement.icon} ${achievement.name}</p>`;
+            document.body.appendChild(popup);
+            playSound('spring');
+            setTimeout(() => popup.remove(), 3000);
+        }
+
+        function checkAchievements() {
+            ACHIEVEMENTS.forEach(a => {
+                if (!saveData.achievements.includes(a.id) && a.check(saveData)) {
+                    saveData.achievements.push(a.id);
+                    showAchievementPopup(a);
+                    saveSaveData();
+                }
+            });
         }
 
         // Polyfill for roundRect
@@ -772,6 +1042,7 @@
 
         // Init
         loadSaveData();
+        updateSoundButton();
         updateUI();
     </script>
 </body>
