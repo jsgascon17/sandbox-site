@@ -108,8 +108,11 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.2s;
+            position: relative;
+            z-index: 10;
         }
         .btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+        .btn:active { transform: scale(0.95); }
         .btn:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn.danger { background: linear-gradient(to bottom, #ff4444, #cc0000); }
         .btn.upgrade { background: linear-gradient(to bottom, #00ff88, #00aa55); }
@@ -143,6 +146,8 @@
             max-height: 80vh;
             overflow-y: auto;
             text-align: center;
+            position: relative;
+            z-index: 5;
         }
         .modal-content h3 { color: #00d4ff; margin-bottom: 15px; font-size: 1.5rem; }
         .close-btn {
@@ -228,14 +233,18 @@
         .map-btn-start {
             padding: 10px 20px;
             font-size: 0.9rem;
+            font-family: 'Courier New', monospace;
             background: rgba(0,0,0,0.5);
             border: 2px solid #444;
             border-radius: 8px;
             color: #fff;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
+            z-index: 10;
         }
         .map-btn-start:hover { border-color: #00d4ff; }
+        .map-btn-start:active { transform: scale(0.95); }
         .map-btn-start.selected { border-color: #00ff88; background: rgba(0,255,136,0.2); }
 
         /* Mode selection */
@@ -254,8 +263,12 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            z-index: 10;
+            user-select: none;
         }
         .mode-card:hover { border-color: #00d4ff; transform: scale(1.02); }
+        .mode-card:active { transform: scale(0.98); }
         .mode-card.selected { border-color: #00ff88; background: rgba(0,255,136,0.1); }
         .mode-icon { font-size: 2rem; margin-bottom: 10px; }
         .mode-name { font-size: 1.1rem; font-weight: bold; color: #00d4ff; }
@@ -2287,28 +2300,61 @@
             fastBtn.textContent = `${gameSpeed}x Speed`;
         };
 
-        document.getElementById('playBtn').onclick = startGame;
-        document.getElementById('victoryBtn').onclick = startGame;
-        document.getElementById('retryBtn').onclick = startGame;
+        function handlePlayClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startGame();
+        }
+        const playBtn = document.getElementById('playBtn');
+        playBtn.addEventListener('click', handlePlayClick);
+        playBtn.addEventListener('touchend', handlePlayClick);
+
+        const victoryBtn = document.getElementById('victoryBtn');
+        victoryBtn.addEventListener('click', handlePlayClick);
+        victoryBtn.addEventListener('touchend', handlePlayClick);
+
+        const retryBtn = document.getElementById('retryBtn');
+        retryBtn.addEventListener('click', handlePlayClick);
+        retryBtn.addEventListener('touchend', handlePlayClick);
 
         // Mode selection
+        function selectMode(card) {
+            gameMode = card.dataset.mode;
+            document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        }
         document.querySelectorAll('.mode-card').forEach(card => {
-            card.onclick = () => {
-                gameMode = card.dataset.mode;
-                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-            };
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectMode(card);
+            });
+            card.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectMode(card);
+            });
         });
 
         // Map selection
+        function selectMapBtn(btn) {
+            const mapId = btn.dataset.map;
+            setMap(mapId);
+            document.querySelectorAll('.map-btn-start').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('mapDesc').textContent = MAPS[mapId].desc;
+        }
         document.querySelectorAll('.map-btn-start').forEach(btn => {
-            btn.onclick = () => {
-                const mapId = btn.dataset.map;
-                setMap(mapId);
-                document.querySelectorAll('.map-btn-start').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                document.getElementById('mapDesc').textContent = MAPS[mapId].desc;
-            };
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectMapBtn(btn);
+            });
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectMapBtn(btn);
+            });
         });
 
         // ============================================
