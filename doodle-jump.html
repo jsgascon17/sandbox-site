@@ -251,6 +251,13 @@
         .owner-input:focus { outline: none; border-color: #f59e0b; }
         .current-code { color: #888; font-size: 0.85rem; margin-bottom: 15px; }
         .current-code span { color: #f59e0b; font-family: monospace; }
+
+        .notification {
+            position: fixed; top: 20px; right: 20px; background: #4CAF50; color: #fff;
+            padding: 12px 20px; border-radius: 15px; font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; z-index: 1000;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -1160,6 +1167,15 @@
             input.value = '';
         }
 
+        // Notifications
+        function showNotification(text) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = text;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
         // Admin functions
         function showAdmin() { document.getElementById('adminOverlay').classList.remove('hidden'); }
         function hideAdmin() { document.getElementById('adminOverlay').classList.add('hidden'); }
@@ -1170,6 +1186,7 @@
             playSound('coin');
             updateUI();
             saveSaveData();
+            showNotification('+' + amount + ' coins!');
         }
 
         function adminUnlockAllSkins() {
@@ -1179,6 +1196,7 @@
             playSound('spring');
             checkAchievements();
             saveSaveData();
+            showNotification('All skins unlocked!');
         }
 
         function adminUnlockAllAchievements() {
@@ -1187,6 +1205,7 @@
             });
             playSound('spring');
             saveSaveData();
+            showNotification('All achievements unlocked!');
         }
 
         function adminResetGame() {
@@ -1202,6 +1221,7 @@
                 document.getElementById('adminBtn').classList.remove('visible');
                 hideAdmin();
                 saveSaveData();
+                showNotification('Admin access revoked');
             }
         }
 
@@ -1215,12 +1235,20 @@
 
         function changeAdminCode() {
             const newCode = document.getElementById('newAdminCode').value.trim().toLowerCase();
-            if (!newCode || newCode.length < 4) return;
+            if (!newCode) {
+                showNotification('Please enter a new code!');
+                return;
+            }
+            if (newCode.length < 4) {
+                showNotification('Code must be at least 4 characters!');
+                return;
+            }
             saveData.customAdminCode = newCode;
             document.getElementById('currentAdminCode').textContent = newCode;
             document.getElementById('newAdminCode').value = '';
             playSound('spring');
             saveSaveData();
+            showNotification('Admin code changed to: ' + newCode);
         }
 
         function disableAdminCode() {
@@ -1228,6 +1256,7 @@
             document.getElementById('currentAdminCode').textContent = (saveData.customAdminCode || 'jsg1708admin') + ' (DISABLED)';
             playSound('break');
             saveSaveData();
+            showNotification('Admin code disabled!');
         }
 
         function enableAdminCode() {
@@ -1235,6 +1264,7 @@
             document.getElementById('currentAdminCode').textContent = saveData.customAdminCode || 'jsg1708admin';
             playSound('spring');
             saveSaveData();
+            showNotification('Admin code enabled!');
         }
 
         function ownerMaxEverything() {
@@ -1244,6 +1274,7 @@
             playSound('spring');
             updateUI();
             saveSaveData();
+            showNotification('EVERYTHING MAXED!');
         }
 
         // Achievements
