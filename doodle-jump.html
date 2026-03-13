@@ -258,6 +258,19 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; z-index: 1000;
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .skin-item.owner-skin { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .owner-skin-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 15px; background: #333; border: 2px solid #444;
+            border-radius: 8px; color: #fff; cursor: pointer; transition: all 0.2s;
+        }
+        .owner-skin-btn:hover { border-color: #f59e0b; background: #3a3a3a; }
+        .owner-skin-btn.owned { border-color: #10B981; background: rgba(16, 185, 129, 0.2); }
+        .owner-skin-btn .skin-icon { font-size: 1.5rem; }
+        .owner-skin-btn .skin-name { font-weight: bold; }
+        .owner-skin-btn .skin-status { font-size: 0.8rem; color: #888; }
+        .owner-skin-btn.owned .skin-status { color: #10B981; }
     </style>
 </head>
 <body>
@@ -392,6 +405,12 @@
                 </div>
             </div>
             <div class="admin-section">
+                <h3>🎨 Owner Exclusive Skins</h3>
+                <div class="admin-grid" id="ownerSkinsGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="admin-section">
                 <h3>🔒 Access Control</h3>
                 <div class="admin-grid">
                     <button class="admin-action danger" onclick="disableAdminCode()"><span class="icon">🚫</span>Disable Admin</button>
@@ -495,6 +514,13 @@
             { id: 'astronaut', name: 'Astronaut', icon: '👨‍🚀', color: '#eceff1', price: 350 },
             { id: 'wizard', name: 'Wizard', icon: '🧙', color: '#7e57c2', price: 400 },
             { id: 'superhero', name: 'Superhero', icon: '🦸', color: '#e53935', price: 500 },
+            // Owner exclusive skins
+            { id: 'owner_galaxy', name: 'Galaxy', icon: '🌌', color: '#8B5CF6', price: 0, ownerOnly: true },
+            { id: 'owner_phoenix', name: 'Phoenix', icon: '🔥', color: '#F59E0B', price: 0, ownerOnly: true },
+            { id: 'owner_diamond', name: 'Diamond', icon: '💎', color: '#60A5FA', price: 0, ownerOnly: true },
+            { id: 'owner_crown', name: 'King', icon: '👑', color: '#EAB308', price: 0, ownerOnly: true },
+            { id: 'owner_thunder', name: 'Thunder', icon: '⚡', color: '#FBBF24', price: 0, ownerOnly: true },
+            { id: 'owner_dev', name: 'Developer', icon: '💻', color: '#10B981', price: 0, ownerOnly: true },
         ];
 
         // Codes
@@ -990,14 +1016,18 @@
         function showShop() {
             document.getElementById('shopCoins').textContent = saveData.coins;
             const grid = document.getElementById('skinGrid');
-            grid.innerHTML = SKINS.map(skin => {
+            // Filter out owner-only skins unless owned
+            const visibleSkins = SKINS.filter(skin => !skin.ownerOnly || saveData.ownedSkins.includes(skin.id));
+            grid.innerHTML = visibleSkins.map(skin => {
                 const owned = saveData.ownedSkins.includes(skin.id);
                 const equipped = saveData.equippedSkin === skin.id;
+                const isOwnerSkin = skin.ownerOnly;
                 return `
-                    <div class="skin-item ${owned ? 'owned' : 'locked'} ${equipped ? 'equipped' : ''}"
+                    <div class="skin-item ${owned ? 'owned' : 'locked'} ${equipped ? 'equipped' : ''} ${isOwnerSkin ? 'owner-skin' : ''}"
                          onclick="buySkin('${skin.id}')">
                         <div class="skin-icon">${skin.icon}</div>
-                        ${!owned ? `<div class="skin-cost">${skin.price} 🪙</div>` : ''}
+                        ${isOwnerSkin && owned ? '<div style="color: #f59e0b; font-size: 0.6rem;">👑 OWNER</div>' : ''}
+                        ${!owned && !isOwnerSkin ? `<div class="skin-cost">${skin.price} 🪙</div>` : ''}
                         ${equipped ? '<div style="color: #ffeb3b; font-size: 0.7rem;">Equipped</div>' : ''}
                     </div>
                 `;
@@ -1013,7 +1043,7 @@
             const skin = SKINS.find(s => s.id === id);
             if (saveData.ownedSkins.includes(id)) {
                 saveData.equippedSkin = id;
-            } else if (saveData.coins >= skin.price) {
+            } else if (!skin.ownerOnly && saveData.coins >= skin.price) {
                 saveData.coins -= skin.price;
                 saveData.ownedSkins.push(id);
                 saveData.equippedSkin = id;
@@ -1229,9 +1259,42 @@
         function showOwner() {
             const currentCode = saveData.customAdminCode || 'jsg1708admin';
             document.getElementById('currentAdminCode').textContent = saveData.adminCodeEnabled ? currentCode : currentCode + ' (DISABLED)';
+            renderOwnerSkins();
             document.getElementById('ownerOverlay').classList.remove('hidden');
         }
         function hideOwner() { document.getElementById('ownerOverlay').classList.add('hidden'); }
+
+        function renderOwnerSkins() {
+            const grid = document.getElementById('ownerSkinsGrid');
+            const ownerSkins = SKINS.filter(s => s.ownerOnly);
+            grid.innerHTML = ownerSkins.map(skin => {
+                const owned = saveData.ownedSkins.includes(skin.id);
+                return `
+                    <button class="owner-skin-btn ${owned ? 'owned' : ''}" onclick="unlockOwnerSkin('${skin.id}')">
+                        <span class="skin-icon">${skin.icon}</span>
+                        <div>
+                            <div class="skin-name">${skin.name}</div>
+                            <div class="skin-status">${owned ? '✓ Unlocked' : 'Click to unlock'}</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function unlockOwnerSkin(id) {
+            const skin = SKINS.find(s => s.id === id);
+            if (saveData.ownedSkins.includes(id)) {
+                saveData.equippedSkin = id;
+                showNotification('Equipped ' + skin.name + '!');
+            } else {
+                saveData.ownedSkins.push(id);
+                saveData.equippedSkin = id;
+                showNotification('Unlocked ' + skin.name + '!');
+            }
+            playSound('spring');
+            saveSaveData();
+            renderOwnerSkins();
+        }
 
         function changeAdminCode() {
             const newCode = document.getElementById('newAdminCode').value.trim().toLowerCase();

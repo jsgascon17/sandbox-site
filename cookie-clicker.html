@@ -113,6 +113,19 @@
         }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+        .shop-item.owner-skin { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+        .owner-skin-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 15px; background: #5a3d1a; border: 2px solid #6b4423;
+            border-radius: 8px; color: #fff; cursor: pointer; transition: all 0.2s;
+        }
+        .owner-skin-btn:hover { border-color: #f59e0b; background: #6b4423; }
+        .owner-skin-btn.owned { border-color: #4CAF50; background: rgba(76, 175, 80, 0.2); }
+        .owner-skin-btn .skin-icon { font-size: 1.5rem; }
+        .owner-skin-btn .skin-name { font-weight: bold; }
+        .owner-skin-btn .skin-status { font-size: 0.8rem; color: #aaa; }
+        .owner-skin-btn.owned .skin-status { color: #4CAF50; }
+
         .falling-cookie {
             position: fixed; font-size: 1.5rem; pointer-events: none;
             animation: fall linear forwards; z-index: 50;
@@ -365,6 +378,13 @@
                     <button class="admin-action" onclick="adminAddCookies(1e24)"><span class="icon">+</span>1 Septillion</button>
                     <button class="admin-action" onclick="ownerMaxEverything()"><span class="icon">⭐</span>MAX EVERYTHING</button>
                     <button class="admin-action" onclick="adminAddChips(1000000)"><span class="icon">☁️</span>1M Chips</button>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h3>🍪 Owner Exclusive Skins</h3>
+                <div class="admin-grid" id="ownerSkinsGrid">
+                    <!-- Populated by JS -->
                 </div>
             </div>
 
@@ -656,6 +676,13 @@
             { id: 'star', name: 'Star Cookie', icon: '⭐', desc: 'Reach for the stars', price: 500000 },
             { id: 'heart', name: 'Love Cookie', icon: '❤️', desc: 'Baked with love', price: 1000000 },
             { id: 'alien', name: 'Alien Cookie', icon: '👽', desc: 'Out of this world', price: 10000000 },
+            // Owner exclusive skins
+            { id: 'owner_galaxy', name: 'Galaxy Cookie', icon: '🌌', desc: 'Cosmic flavors', ownerOnly: true },
+            { id: 'owner_fire', name: 'Fire Cookie', icon: '🔥', desc: 'Too hot to handle', ownerOnly: true },
+            { id: 'owner_diamond', name: 'Diamond Cookie', icon: '💎', desc: 'Priceless perfection', ownerOnly: true },
+            { id: 'owner_crown', name: 'Royal Cookie', icon: '👑', desc: 'Fit for a king', ownerOnly: true },
+            { id: 'owner_earth', name: 'Earth Cookie', icon: '🌍', desc: 'World domination', ownerOnly: true },
+            { id: 'owner_dev', name: 'Dev Cookie', icon: '💻', desc: 'Coded with love', ownerOnly: true },
         ];
 
         // Codes
@@ -867,11 +894,14 @@
 
         function renderSkins() {
             const list = document.getElementById('skinsList');
-            list.innerHTML = SKINS.map(s => {
+            // Filter out owner-only skins unless owned
+            const visibleSkins = SKINS.filter(s => !s.ownerOnly || saveData.ownedSkins.includes(s.id));
+            list.innerHTML = visibleSkins.map(s => {
                 const owned = saveData.ownedSkins.includes(s.id);
                 const equipped = saveData.equippedSkin === s.id;
                 const canAfford = s.price ? saveData.cookies >= s.price : false;
                 const isCodeOnly = s.code && !owned;
+                const isOwnerSkin = s.ownerOnly;
 
                 let buttonText = '';
                 let buttonAction = '';
@@ -890,12 +920,14 @@
                 }
 
                 const iconStyle = s.id === 'bunny' ? 'font-size: 2.5rem; filter: hue-rotate(200deg) saturate(2) brightness(0.6);' : 'font-size: 2.5rem;';
+                const ownerTag = isOwnerSkin ? '<div style="color: #f59e0b; font-size: 0.7rem;">👑 OWNER</div>' : '';
                 return `
-                    <div class="shop-item ${equipped ? 'equipped' : ''} ${!owned && !canAfford ? 'disabled' : ''}" ${buttonAction}>
+                    <div class="shop-item ${equipped ? 'equipped' : ''} ${!owned && !canAfford ? 'disabled' : ''} ${isOwnerSkin ? 'owner-skin' : ''}" ${buttonAction}>
                         <div class="shop-item-icon" style="${iconStyle}">${s.icon}</div>
                         <div class="shop-item-info">
                             <div class="shop-item-name">${s.name}</div>
                             <div class="shop-item-desc">${s.desc}</div>
+                            ${ownerTag}
                         </div>
                         <div class="shop-item-cost" style="${equipped ? 'background: #4CAF50;' : ''}">${buttonText}</div>
                     </div>
@@ -1332,11 +1364,45 @@
         function showOwner() {
             const currentCode = saveData.customAdminCode || 'jsg1708admin';
             document.getElementById('currentAdminCode').textContent = saveData.adminCodeEnabled ? currentCode : currentCode + ' (DISABLED)';
+            renderOwnerSkins();
             document.getElementById('ownerOverlay').classList.remove('hidden');
         }
 
         function hideOwner() {
             document.getElementById('ownerOverlay').classList.add('hidden');
+        }
+
+        function renderOwnerSkins() {
+            const grid = document.getElementById('ownerSkinsGrid');
+            const ownerSkins = SKINS.filter(s => s.ownerOnly);
+            grid.innerHTML = ownerSkins.map(skin => {
+                const owned = saveData.ownedSkins.includes(skin.id);
+                return `
+                    <button class="owner-skin-btn ${owned ? 'owned' : ''}" onclick="unlockOwnerSkin('${skin.id}')">
+                        <span class="skin-icon">${skin.icon}</span>
+                        <div>
+                            <div class="skin-name">${skin.name}</div>
+                            <div class="skin-status">${owned ? '✓ Unlocked' : 'Click to unlock'}</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function unlockOwnerSkin(id) {
+            const skin = SKINS.find(s => s.id === id);
+            if (saveData.ownedSkins.includes(id)) {
+                saveData.equippedSkin = id;
+                showNotification('Equipped ' + skin.name + '!');
+            } else {
+                saveData.ownedSkins.push(id);
+                saveData.equippedSkin = id;
+                showNotification('Unlocked ' + skin.name + '!');
+            }
+            playSound('golden');
+            updateCookieDisplay();
+            saveSaveData();
+            renderOwnerSkins();
         }
 
         function changeAdminCode() {
