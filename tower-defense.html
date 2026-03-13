@@ -113,6 +113,7 @@
         .btn:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn.danger { background: linear-gradient(to bottom, #ff4444, #cc0000); }
         .btn.upgrade { background: linear-gradient(to bottom, #00ff88, #00aa55); }
+        .btn.upgrade-all { background: linear-gradient(to bottom, #ffd700, #cc9900); color: #000; }
         .overlay {
             position: fixed;
             top: 0; left: 0;
@@ -302,6 +303,7 @@
         <button class="btn" id="fastBtn">1x Speed</button>
         <button class="btn upgrade" id="upgradeBtn" style="display:none;">Upgrade</button>
         <button class="btn danger" id="sellBtn" style="display:none;">Sell Tower</button>
+        <button class="btn upgrade-all" id="upgradeAllBtn">Upgrade All (0g)</button>
     </div>
     <p class="instructions">
         <span>Click</span> tower then grid to place | <span>Click</span> placed tower to upgrade/sell | <span>Space</span> start wave
@@ -915,6 +917,14 @@
                     btn.classList.toggle('disabled', deployed);
                 }
             });
+
+            // Update Upgrade All button
+            const upgradeAllBtn = document.getElementById('upgradeAllBtn');
+            if (upgradeAllBtn && typeof calculateUpgradeAllCost === 'function') {
+                const totalCost = calculateUpgradeAllCost();
+                upgradeAllBtn.textContent = `Upgrade All (${totalCost}g)`;
+                upgradeAllBtn.disabled = totalCost === 0 || gold < totalCost;
+            }
         }
 
         function selectTower(id) {
@@ -1387,6 +1397,70 @@
             playSound('upgrade');
             updateTowerSelection();
             updateTowerBar();
+            updateUpgradeAllButton();
+        }
+
+        function calculateUpgradeAllCost() {
+            let totalCost = 0;
+            towers.forEach(t => {
+                const tower = TOWERS[t.type];
+                const level = t.level || 1;
+                // Cost to upgrade from current level to level 3
+                for (let lvl = level; lvl < 3; lvl++) {
+                    totalCost += Math.floor(tower.cost * lvl);
+                }
+            });
+            return totalCost;
+        }
+
+        function updateUpgradeAllButton() {
+            const upgradeAllBtn = document.getElementById('upgradeAllBtn');
+            const totalCost = calculateUpgradeAllCost();
+            upgradeAllBtn.textContent = `Upgrade All (${totalCost}g)`;
+            upgradeAllBtn.disabled = totalCost === 0 || gold < totalCost;
+        }
+
+        function upgradeAllTowers() {
+            const totalCost = calculateUpgradeAllCost();
+            if (totalCost === 0) {
+                playSound('error');
+                return;
+            }
+            if (gold < totalCost) {
+                playSound('error');
+                return;
+            }
+
+            gold -= totalCost;
+            goldEl.textContent = gold;
+
+            let upgradesPerformed = 0;
+            towers.forEach(t => {
+                const level = t.level || 1;
+                if (level < 3) {
+                    const upgradesNeeded = 3 - level;
+                    upgradesPerformed += upgradesNeeded;
+                    t.level = 3;
+                }
+            });
+
+            saveData.stats.towersUpgraded += upgradesPerformed;
+            save();
+
+            if (upgradesPerformed > 0) {
+                checkAchievement('max_tower');
+                checkAchievement('upgrader');
+                checkAllAchievements();
+            }
+
+            playSound('upgrade');
+            updateUpgradeAllButton();
+            updateTowerBar();
+
+            // Update selection if a tower was selected
+            if (selectedPlacedTower) {
+                updateTowerSelection();
+            }
         }
 
         function sellTower() {
@@ -2191,6 +2265,9 @@
         startWaveBtn.onclick = startWave;
         sellBtn.onclick = sellTower;
         upgradeBtn.onclick = upgradeTower;
+
+        const upgradeAllBtn = document.getElementById('upgradeAllBtn');
+        upgradeAllBtn.onclick = upgradeAllTowers;
 
         fastBtn.onclick = () => {
             gameSpeed = gameSpeed === 1 ? 2 : gameSpeed === 2 ? 3 : 1;
