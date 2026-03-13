@@ -74,6 +74,59 @@
             .stats { width: 100%; font-size: 0.75rem; }
             .mobile-controls { display: flex; }
         }
+
+        /* Admin/Owner System */
+        .codes-btn, .admin-btn, .owner-btn {
+            position: fixed; right: 10px; padding: 8px 15px;
+            border-radius: 8px; cursor: pointer; z-index: 50;
+            font-family: 'Courier New', monospace; font-weight: bold;
+            border: 2px solid; display: none;
+        }
+        .codes-btn { top: 10px; background: rgba(0,255,0,0.2); color: #0f0; border-color: #0f0; display: block; }
+        .admin-btn { top: 50px; background: rgba(255,100,100,0.2); color: #ff6b6b; border-color: #ff6b6b; }
+        .owner-btn { top: 90px; background: rgba(245,158,11,0.2); color: #f59e0b; border-color: #f59e0b; }
+        .codes-btn:hover, .admin-btn:hover, .owner-btn:hover { transform: scale(1.05); }
+        .admin-btn.visible, .owner-btn.visible { display: block; }
+
+        .panel-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 200; }
+        .panel-overlay.hidden { display: none; }
+
+        .panel { background: #111; border: 2px solid #0f0; border-radius: 15px; padding: 25px; max-width: 450px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .admin-panel { border-color: #ff6b6b; }
+        .admin-panel h2 { color: #ff6b6b; }
+        .owner-panel { border-color: #f59e0b; }
+        .owner-panel h2 { color: #f59e0b; }
+
+        .panel h2 { text-align: center; margin-bottom: 20px; font-size: 1.5rem; }
+        .panel-section { margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .panel-section h3 { color: #0f0; margin-bottom: 12px; font-size: 1rem; }
+
+        .panel-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .panel-action { padding: 10px; background: #222; border: 2px solid #333; border-radius: 8px; color: #fff; cursor: pointer; font-family: 'Courier New', monospace; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .panel-action:hover { border-color: #0f0; background: #2a2a2a; }
+        .panel-action.danger { border-color: #ff4444; }
+        .panel-action.danger:hover { background: #442222; }
+        .panel-action .icon { font-size: 1.1rem; }
+
+        .code-input { width: 100%; padding: 10px; background: #222; border: 2px solid #333; border-radius: 8px; color: #fff; font-family: 'Courier New', monospace; margin-bottom: 10px; }
+        .code-input:focus { outline: none; border-color: #0f0; }
+        .code-message { padding: 8px; border-radius: 5px; text-align: center; margin-top: 10px; font-size: 0.85rem; }
+        .code-message.success { background: rgba(0,255,0,0.2); color: #0f0; }
+        .code-message.error { background: rgba(255,0,0,0.2); color: #f00; }
+
+        .current-code { color: #888; font-size: 0.85rem; margin-bottom: 10px; }
+        .current-code span { color: #f59e0b; font-family: monospace; }
+
+        .owner-skin-btn { display: flex; align-items: center; gap: 8px; padding: 10px; background: #222; border: 2px solid #333; border-radius: 8px; color: #fff; cursor: pointer; transition: all 0.2s; }
+        .owner-skin-btn:hover { border-color: #f59e0b; background: #2a2a2a; }
+        .owner-skin-btn.owned { border-color: #0f0; background: rgba(0,255,0,0.1); }
+        .owner-skin-btn .skin-icon { font-size: 1.3rem; }
+        .owner-skin-btn .skin-name { font-weight: bold; }
+        .owner-skin-btn .skin-status { font-size: 0.75rem; color: #888; }
+        .owner-skin-btn.owned .skin-status { color: #0f0; }
+
+        .notification { position: fixed; top: 20px; right: 20px; background: #0f0; color: #000; padding: 12px 20px; border-radius: 10px; font-weight: bold; box-shadow: 0 5px 20px rgba(0,255,0,0.4); animation: slideIn 0.3s ease-out; z-index: 1000; font-family: 'Courier New', monospace; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -156,6 +209,84 @@
         <span class="close-btn" id="closeAchievements">&times;</span>
         <h2 style="font-size: 1.8rem;">ACHIEVEMENTS</h2>
         <div class="achievements-grid" id="achievementsGrid"></div>
+    </div>
+
+    <!-- Codes/Admin/Owner Buttons -->
+    <button class="codes-btn" onclick="showCodes()">🎁 CODES</button>
+    <button class="admin-btn" id="adminBtn" onclick="showAdmin()">🔧 ADMIN</button>
+    <button class="owner-btn" id="ownerBtn" onclick="showOwner()">👑 OWNER</button>
+
+    <!-- Codes Panel -->
+    <div class="panel-overlay hidden" id="codesOverlay">
+        <div class="panel">
+            <h2 style="color: #0f0;">🎁 ENTER CODE</h2>
+            <input type="text" class="code-input" id="codeInput" placeholder="Enter code...">
+            <button class="panel-action" onclick="submitCode()" style="width: 100%;"><span class="icon">✓</span> REDEEM CODE</button>
+            <div class="code-message hidden" id="codeMessage"></div>
+            <button class="btn" onclick="hideCodes()" style="width: 100%; margin-top: 15px;">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="panel-overlay hidden" id="adminOverlay">
+        <div class="panel admin-panel">
+            <h2>🔧 ADMIN PANEL</h2>
+            <div class="panel-section">
+                <h3>💰 Add Coins</h3>
+                <div class="panel-grid">
+                    <button class="panel-action" onclick="adminAddCoins(1000)"><span class="icon">+</span>1,000</button>
+                    <button class="panel-action" onclick="adminAddCoins(10000)"><span class="icon">+</span>10,000</button>
+                    <button class="panel-action" onclick="adminAddCoins(100000)"><span class="icon">+</span>100,000</button>
+                    <button class="panel-action" onclick="adminAddCoins(1000000)"><span class="icon">+</span>1,000,000</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h3>⚡ Quick Actions</h3>
+                <div class="panel-grid">
+                    <button class="panel-action" onclick="adminUnlockAllSkins()"><span class="icon">🎨</span>All Skins</button>
+                    <button class="panel-action" onclick="adminUnlockAllAchievements()"><span class="icon">🏆</span>All Achievements</button>
+                    <button class="panel-action" onclick="adminMaxUpgrades()"><span class="icon">⬆️</span>Max Upgrades</button>
+                    <button class="panel-action danger" onclick="adminResetGame()"><span class="icon">🗑️</span>Reset All</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h3>🔒 Access</h3>
+                <button class="panel-action danger" onclick="adminRevokeAdmin()" style="width: 100%;"><span class="icon">🚫</span>Revoke Admin Access</button>
+            </div>
+            <button class="btn" onclick="hideAdmin()" style="width: 100%; margin-top: 10px;">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Owner Panel -->
+    <div class="panel-overlay hidden" id="ownerOverlay">
+        <div class="panel owner-panel">
+            <h2>👑 OWNER PANEL</h2>
+            <div class="panel-section">
+                <h3>🔑 Change Admin Code</h3>
+                <p class="current-code">Current: <span id="currentAdminCode">jsg1708admin</span></p>
+                <input type="text" class="code-input" id="newAdminCode" placeholder="New admin code...">
+                <button class="panel-action" onclick="changeAdminCode()" style="width: 100%;"><span class="icon">✓</span>Update Code</button>
+            </div>
+            <div class="panel-section">
+                <h3>💰 Owner Cheats</h3>
+                <div class="panel-grid">
+                    <button class="panel-action" onclick="adminAddCoins(9999999)"><span class="icon">+</span>9,999,999</button>
+                    <button class="panel-action" onclick="ownerMaxEverything()"><span class="icon">⭐</span>MAX ALL</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h3>🚀 Owner Exclusive Ships</h3>
+                <div class="panel-grid" id="ownerSkinsGrid"></div>
+            </div>
+            <div class="panel-section">
+                <h3>🔒 Access Control</h3>
+                <div class="panel-grid">
+                    <button class="panel-action danger" onclick="disableAdminCode()"><span class="icon">🚫</span>Disable Code</button>
+                    <button class="panel-action" onclick="enableAdminCode()"><span class="icon">✓</span>Enable Code</button>
+                </div>
+            </div>
+            <button class="btn" onclick="hideOwner()" style="width: 100%; margin-top: 10px;">CLOSE</button>
+        </div>
     </div>
 
     <script>
@@ -416,9 +547,48 @@
             highScore: 0,
             upgrades: { damage: 0, fireRate: 0, speed: 0, shield: 0, drone: 0, magnet: 0 },
             achievements: [],
-            stats: { aliensKilled: 0, bossesKilled: 0, highestWave: 0, perfectWaves: 0, endlessRecord: 0, totalCoins: 0, upgradesMaxed: 0 }
+            stats: { aliensKilled: 0, bossesKilled: 0, highestWave: 0, perfectWaves: 0, endlessRecord: 0, totalCoins: 0, upgradesMaxed: 0 },
+            ownedSkins: ['classic'],
+            equippedSkin: 'classic',
+            adminUnlocked: false,
+            ownerUnlocked: false,
+            customAdminCode: null,
+            adminCodeEnabled: true
         };
+        // Migrate old saves
+        if (!saveData.ownedSkins) saveData.ownedSkins = ['classic'];
+        if (!saveData.equippedSkin) saveData.equippedSkin = 'classic';
         function save() { localStorage.setItem('spaceInvadersSave2', JSON.stringify(saveData)); }
+
+        // ============================================
+        // SKINS (including owner exclusive)
+        // ============================================
+        const SKINS = [
+            { id: 'classic', name: 'Classic', color: '#0f0' },
+            { id: 'crimson', name: 'Crimson', color: '#ff3333' },
+            { id: 'golden', name: 'Golden', color: '#ffd700' },
+            { id: 'plasma', name: 'Plasma', color: '#00ffff' },
+            { id: 'stealth', name: 'Stealth', color: '#333' },
+            { id: 'rainbow', name: 'Rainbow', color: '#ff69b4' },
+            // Owner exclusive skins
+            { id: 'owner_galaxy', name: 'Galaxy', color: '#8B5CF6', icon: '🌌', ownerOnly: true },
+            { id: 'owner_lightning', name: 'Lightning', color: '#FBBF24', icon: '⚡', ownerOnly: true },
+            { id: 'owner_phoenix', name: 'Phoenix', color: '#F97316', icon: '🔥', ownerOnly: true },
+            { id: 'owner_diamond', name: 'Diamond', color: '#60A5FA', icon: '💎', ownerOnly: true },
+            { id: 'owner_phantom', name: 'Phantom', color: '#A78BFA', icon: '👻', ownerOnly: true },
+            { id: 'owner_dev', name: 'Developer', color: '#10B981', icon: '💻', ownerOnly: true },
+        ];
+
+        // ============================================
+        // CODES
+        // ============================================
+        const CODES = {
+            'alienhunter': { coins: 500, message: '+500 coins!' },
+            'spacecadet': { coins: 1000, message: '+1,000 coins!' },
+            'mothership': { coins: 5000, message: '+5,000 coins!' },
+            'jsg1708admin': { admin: true, message: 'Admin panel unlocked!' },
+            'jsgowner2008': { owner: true, message: 'Owner mode activated!' },
+        };
 
         // ============================================
         // GAME STATE
@@ -1064,6 +1234,261 @@
                 document.querySelectorAll('.skin-btn').forEach(b => b.style.background = b.dataset.skin === currentSkin ? 'rgba(0,255,0,0.3)' : 'transparent');
             };
         });
+
+        // ============================================
+        // NOTIFICATIONS
+        // ============================================
+        function showNotification(text) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = text;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // ============================================
+        // CODES SYSTEM
+        // ============================================
+        function showCodes() { document.getElementById('codesOverlay').classList.remove('hidden'); }
+        function hideCodes() {
+            document.getElementById('codesOverlay').classList.add('hidden');
+            document.getElementById('codeInput').value = '';
+            document.getElementById('codeMessage').classList.add('hidden');
+        }
+
+        function submitCode() {
+            const input = document.getElementById('codeInput');
+            const message = document.getElementById('codeMessage');
+            const code = input.value.toLowerCase().trim();
+
+            if (!code) {
+                message.textContent = 'Enter a code!';
+                message.className = 'code-message error';
+                return;
+            }
+
+            // Check custom admin code
+            const currentAdminCode = saveData.customAdminCode || 'jsg1708admin';
+            if (code === currentAdminCode && saveData.adminCodeEnabled) {
+                if (saveData.adminUnlocked) {
+                    message.textContent = 'Admin already unlocked!';
+                    message.className = 'code-message error';
+                } else {
+                    saveData.adminUnlocked = true;
+                    document.getElementById('adminBtn').classList.add('visible');
+                    message.textContent = 'Admin panel unlocked!';
+                    message.className = 'code-message success';
+                    playSound('powerup');
+                    save();
+                }
+                input.value = '';
+                return;
+            }
+
+            // Check owner code
+            if (code === 'jsgowner2008') {
+                if (saveData.ownerUnlocked) {
+                    message.textContent = 'Owner mode already active!';
+                    message.className = 'code-message error';
+                } else {
+                    saveData.ownerUnlocked = true;
+                    saveData.adminUnlocked = true;
+                    document.getElementById('ownerBtn').classList.add('visible');
+                    document.getElementById('adminBtn').classList.add('visible');
+                    message.textContent = 'Owner mode activated!';
+                    message.className = 'code-message success';
+                    playSound('levelUp');
+                    save();
+                }
+                input.value = '';
+                return;
+            }
+
+            // Check regular codes
+            const codeData = CODES[code];
+            if (!codeData) {
+                message.textContent = 'Invalid code!';
+                message.className = 'code-message error';
+                input.value = '';
+                return;
+            }
+
+            if (codeData.coins) {
+                saveData.coins += codeData.coins;
+                coinsDisplay.textContent = saveData.coins;
+                save();
+            }
+
+            message.textContent = codeData.message;
+            message.className = 'code-message success';
+            playSound('coin');
+            input.value = '';
+        }
+
+        // ============================================
+        // ADMIN PANEL
+        // ============================================
+        function showAdmin() { document.getElementById('adminOverlay').classList.remove('hidden'); }
+        function hideAdmin() { document.getElementById('adminOverlay').classList.add('hidden'); }
+
+        function adminAddCoins(amount) {
+            saveData.coins += amount;
+            coinsDisplay.textContent = saveData.coins;
+            playSound('coin');
+            save();
+            showNotification('+' + amount.toLocaleString() + ' coins!');
+        }
+
+        function adminUnlockAllSkins() {
+            SKINS.forEach(s => {
+                if (!s.ownerOnly && !saveData.ownedSkins.includes(s.id)) {
+                    saveData.ownedSkins.push(s.id);
+                }
+            });
+            playSound('powerup');
+            save();
+            showNotification('All skins unlocked!');
+        }
+
+        function adminUnlockAllAchievements() {
+            ACHIEVEMENTS.forEach(a => {
+                if (!saveData.achievements.includes(a.id)) {
+                    saveData.achievements.push(a.id);
+                }
+            });
+            playSound('powerup');
+            save();
+            showNotification('All achievements unlocked!');
+        }
+
+        function adminMaxUpgrades() {
+            Object.keys(UPGRADES).forEach(id => {
+                saveData.upgrades[id] = UPGRADES[id].maxLevel;
+            });
+            playSound('powerup');
+            save();
+            showNotification('All upgrades maxed!');
+        }
+
+        function adminResetGame() {
+            if (confirm('Reset EVERYTHING? This cannot be undone!')) {
+                localStorage.removeItem('spaceInvadersSave2');
+                location.reload();
+            }
+        }
+
+        function adminRevokeAdmin() {
+            if (confirm('Revoke admin access?')) {
+                saveData.adminUnlocked = false;
+                document.getElementById('adminBtn').classList.remove('visible');
+                hideAdmin();
+                save();
+                showNotification('Admin access revoked');
+            }
+        }
+
+        // ============================================
+        // OWNER PANEL
+        // ============================================
+        function showOwner() {
+            const currentCode = saveData.customAdminCode || 'jsg1708admin';
+            document.getElementById('currentAdminCode').textContent = saveData.adminCodeEnabled ? currentCode : currentCode + ' (DISABLED)';
+            renderOwnerSkins();
+            document.getElementById('ownerOverlay').classList.remove('hidden');
+        }
+        function hideOwner() { document.getElementById('ownerOverlay').classList.add('hidden'); }
+
+        function renderOwnerSkins() {
+            const grid = document.getElementById('ownerSkinsGrid');
+            const ownerSkins = SKINS.filter(s => s.ownerOnly);
+            grid.innerHTML = ownerSkins.map(skin => {
+                const owned = saveData.ownedSkins.includes(skin.id);
+                return `
+                    <button class="owner-skin-btn ${owned ? 'owned' : ''}" onclick="unlockOwnerSkin('${skin.id}')">
+                        <span class="skin-icon">${skin.icon}</span>
+                        <div>
+                            <div class="skin-name">${skin.name}</div>
+                            <div class="skin-status">${owned ? '✓ Unlocked' : 'Click to unlock'}</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function unlockOwnerSkin(id) {
+            const skin = SKINS.find(s => s.id === id);
+            if (saveData.ownedSkins.includes(id)) {
+                saveData.equippedSkin = id;
+                currentSkin = id;
+                showNotification('Equipped ' + skin.name + '!');
+            } else {
+                saveData.ownedSkins.push(id);
+                saveData.equippedSkin = id;
+                currentSkin = id;
+                showNotification('Unlocked ' + skin.name + '!');
+            }
+            playSound('powerup');
+            save();
+            renderOwnerSkins();
+        }
+
+        function changeAdminCode() {
+            const newCode = document.getElementById('newAdminCode').value.trim().toLowerCase();
+            if (!newCode) {
+                showNotification('Please enter a new code!');
+                return;
+            }
+            if (newCode.length < 4) {
+                showNotification('Code must be at least 4 characters!');
+                return;
+            }
+            saveData.customAdminCode = newCode;
+            document.getElementById('currentAdminCode').textContent = newCode;
+            document.getElementById('newAdminCode').value = '';
+            playSound('powerup');
+            save();
+            showNotification('Admin code changed to: ' + newCode);
+        }
+
+        function disableAdminCode() {
+            saveData.adminCodeEnabled = false;
+            document.getElementById('currentAdminCode').textContent = (saveData.customAdminCode || 'jsg1708admin') + ' (DISABLED)';
+            playSound('hit');
+            save();
+            showNotification('Admin code disabled!');
+        }
+
+        function enableAdminCode() {
+            saveData.adminCodeEnabled = true;
+            document.getElementById('currentAdminCode').textContent = saveData.customAdminCode || 'jsg1708admin';
+            playSound('powerup');
+            save();
+            showNotification('Admin code enabled!');
+        }
+
+        function ownerMaxEverything() {
+            saveData.coins = 9999999;
+            coinsDisplay.textContent = saveData.coins;
+            // Max upgrades
+            Object.keys(UPGRADES).forEach(id => {
+                saveData.upgrades[id] = UPGRADES[id].maxLevel;
+            });
+            // All skins
+            SKINS.forEach(s => {
+                if (!saveData.ownedSkins.includes(s.id)) saveData.ownedSkins.push(s.id);
+            });
+            // All achievements
+            ACHIEVEMENTS.forEach(a => {
+                if (!saveData.achievements.includes(a.id)) saveData.achievements.push(a.id);
+            });
+            playSound('levelUp');
+            save();
+            showNotification('EVERYTHING MAXED!');
+        }
+
+        // Initialize admin/owner buttons on load
+        if (saveData.adminUnlocked) document.getElementById('adminBtn').classList.add('visible');
+        if (saveData.ownerUnlocked) document.getElementById('ownerBtn').classList.add('visible');
     </script>
 </body>
 </html>
