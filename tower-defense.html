@@ -919,11 +919,24 @@
             });
 
             // Update Upgrade All button
-            const upgradeAllBtn = document.getElementById('upgradeAllBtn');
-            if (upgradeAllBtn && typeof calculateUpgradeAllCost === 'function') {
-                const totalCost = calculateUpgradeAllCost();
-                upgradeAllBtn.textContent = `Upgrade All (${totalCost}g)`;
-                upgradeAllBtn.disabled = totalCost === 0 || gold < totalCost;
+            try {
+                const upgradeAllBtn = document.getElementById('upgradeAllBtn');
+                if (upgradeAllBtn && typeof towers !== 'undefined' && Array.isArray(towers)) {
+                    let totalCost = 0;
+                    towers.forEach(t => {
+                        const tower = TOWERS[t.type];
+                        if (tower) {
+                            const level = t.level || 1;
+                            for (let lvl = level; lvl < 3; lvl++) {
+                                totalCost += Math.floor(tower.cost * lvl);
+                            }
+                        }
+                    });
+                    upgradeAllBtn.textContent = `Upgrade All (${totalCost}g)`;
+                    upgradeAllBtn.disabled = totalCost === 0 || gold < totalCost;
+                }
+            } catch (e) {
+                // Ignore errors during early initialization
             }
         }
 
