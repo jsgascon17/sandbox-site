@@ -175,6 +175,125 @@
             background: linear-gradient(180deg, #4a4a5a 0%, #3a3a4a 100%) !important;
             box-shadow: 0 0 10px rgba(233,69,96,0.4);
         }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .mobile-controls.visible {
+            display: block;
+        }
+
+        .joystick-container {
+            position: absolute;
+            left: 30px;
+            bottom: 30px;
+            width: 120px;
+            height: 120px;
+            pointer-events: auto;
+        }
+
+        .joystick-base {
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.15);
+            border: 3px solid rgba(233,69,96,0.6);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .joystick-stick {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #e94560 0%, #c73e54 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(233,69,96,0.6);
+        }
+
+        .mobile-buttons {
+            position: absolute;
+            right: 20px;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .mobile-btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .mobile-btn {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid rgba(233,69,96,0.8);
+            background: rgba(233,69,96,0.3);
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .mobile-btn.fire {
+            width: 90px;
+            height: 90px;
+            background: rgba(233,69,96,0.5);
+            border-color: #e94560;
+            font-size: 2rem;
+        }
+
+        .mobile-btn.active {
+            background: rgba(233,69,96,0.7);
+            box-shadow: 0 0 20px rgba(233,69,96,0.8);
+        }
+
+        .mobile-btn.reload {
+            background: rgba(100,200,100,0.3);
+            border-color: rgba(100,200,100,0.8);
+        }
+
+        .mobile-btn.grenade {
+            background: rgba(255,165,0,0.3);
+            border-color: rgba(255,165,0,0.8);
+        }
+
+        .mobile-btn.melee {
+            background: rgba(150,150,255,0.3);
+            border-color: rgba(150,150,255,0.8);
+        }
+
+        @media (pointer: coarse), (max-width: 900px) {
+            .mobile-controls {
+                display: block;
+            }
+            #gameCanvas {
+                cursor: default;
+            }
+            .instructions {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -186,6 +305,25 @@
         <div class="hud-item"><span id="gunName">Pistol</span> [<span id="ammo">∞</span>]</div>
     </div>
     <canvas id="gameCanvas"></canvas>
+
+    <!-- Mobile Controls -->
+    <div class="mobile-controls" id="mobileControls">
+        <div class="joystick-container" id="joystickContainer">
+            <div class="joystick-base">
+                <div class="joystick-stick" id="joystickStick"></div>
+            </div>
+        </div>
+        <div class="mobile-buttons">
+            <div class="mobile-btn-row">
+                <button class="mobile-btn grenade" id="btnGrenade">💣</button>
+                <button class="mobile-btn melee" id="btnMelee">🔪</button>
+            </div>
+            <div class="mobile-btn-row">
+                <button class="mobile-btn reload" id="btnReload">🔄</button>
+                <button class="mobile-btn fire" id="btnFire">🔫</button>
+            </div>
+        </div>
+    </div>
     <div class="instructions" id="runInstructions">
         <span>A/D</span> Dodge | <span>MOUSE</span> Aim & Shoot | <span>R</span> Reload | <span>G</span> Grenade | <span>Q</span> Ultimate | <span>V</span> Melee
         <button id="soundBtn" style="background: #333; border: 2px solid #e94560; color: #fff; padding: 3px 8px; border-radius: 5px; cursor: pointer; margin-left: 10px;">🔊</button>
@@ -3145,6 +3283,169 @@
         document.getElementById('toLobbyBtn').onclick = goToLobby;
         document.getElementById('victoryBtn').onclick = goToLobby;
         document.getElementById('soundBtn').onclick = () => { soundEnabled = !soundEnabled; document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇'; };
+
+        // ============================================
+        // MOBILE TOUCH CONTROLS
+        // ============================================
+        const mobileControls = document.getElementById('mobileControls');
+        const joystickContainer = document.getElementById('joystickContainer');
+        const joystickStick = document.getElementById('joystickStick');
+        const btnFire = document.getElementById('btnFire');
+        const btnReload = document.getElementById('btnReload');
+        const btnGrenade = document.getElementById('btnGrenade');
+        const btnMelee = document.getElementById('btnMelee');
+
+        let joystickActive = false;
+        let joystickTouchId = null;
+        let joystickCenter = { x: 0, y: 0 };
+        const joystickMaxDist = 45;
+
+        // Check if mobile/touch device
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (isTouchDevice) {
+            mobileControls.classList.add('visible');
+        }
+
+        // Joystick touch handling
+        joystickContainer.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            joystickActive = true;
+            joystickTouchId = touch.identifier;
+            const rect = joystickContainer.getBoundingClientRect();
+            joystickCenter = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            updateJoystick(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', e => {
+            if (!joystickActive) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    e.preventDefault();
+                    updateJoystick(touch.clientX, touch.clientY);
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    joystickActive = false;
+                    joystickTouchId = null;
+                    joystickStick.style.transform = 'translate(-50%, -50%)';
+                    // Reset movement keys
+                    keys['a'] = false;
+                    keys['d'] = false;
+                    keys['w'] = false;
+                    keys['s'] = false;
+                    break;
+                }
+            }
+        });
+
+        function updateJoystick(touchX, touchY) {
+            let dx = touchX - joystickCenter.x;
+            let dy = touchY - joystickCenter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > joystickMaxDist) {
+                dx = (dx / dist) * joystickMaxDist;
+                dy = (dy / dist) * joystickMaxDist;
+            }
+
+            joystickStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+            // Convert to key presses
+            const threshold = 15;
+            keys['a'] = dx < -threshold;
+            keys['d'] = dx > threshold;
+            keys['w'] = dy < -threshold;
+            keys['s'] = dy > threshold;
+        }
+
+        // Fire button - auto-aim to center and shoot
+        let fireInterval = null;
+
+        btnFire.addEventListener('touchstart', e => {
+            e.preventDefault();
+            btnFire.classList.add('active');
+            mouseDown = true;
+            // Auto-aim toward center-top of screen (where zombies come from)
+            mouseX = W / 2;
+            mouseY = H * 0.3;
+        }, { passive: false });
+
+        btnFire.addEventListener('touchend', e => {
+            e.preventDefault();
+            btnFire.classList.remove('active');
+            mouseDown = false;
+        });
+
+        // Touch on canvas to aim
+        canvas.addEventListener('touchmove', e => {
+            if (gameMode === 'run') {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                mouseX = (touch.clientX - rect.left) * (W / rect.width);
+                mouseY = (touch.clientY - rect.top) * (H / rect.height);
+            }
+        }, { passive: true });
+
+        // Reload button
+        btnReload.addEventListener('touchstart', e => {
+            e.preventDefault();
+            btnReload.classList.add('active');
+            keys['r'] = true;
+        }, { passive: false });
+
+        btnReload.addEventListener('touchend', e => {
+            e.preventDefault();
+            btnReload.classList.remove('active');
+            keys['r'] = false;
+        });
+
+        // Grenade button
+        btnGrenade.addEventListener('touchstart', e => {
+            e.preventDefault();
+            btnGrenade.classList.add('active');
+            throwGrenade();
+        }, { passive: false });
+
+        btnGrenade.addEventListener('touchend', e => {
+            e.preventDefault();
+            btnGrenade.classList.remove('active');
+        });
+
+        // Melee button
+        btnMelee.addEventListener('touchstart', e => {
+            e.preventDefault();
+            btnMelee.classList.add('active');
+            meleeAttack();
+        }, { passive: false });
+
+        btnMelee.addEventListener('touchend', e => {
+            e.preventDefault();
+            btnMelee.classList.remove('active');
+        });
+
+        // Show/hide mobile controls based on game mode
+        const originalGoToLobby = goToLobby;
+        goToLobby = function() {
+            originalGoToLobby();
+            if (isTouchDevice) mobileControls.classList.add('visible');
+        };
+
+        const originalStartRun = startRun;
+        startRun = function() {
+            originalStartRun();
+            if (isTouchDevice) mobileControls.classList.add('visible');
+        };
 
         gameLoop();
     </script>
