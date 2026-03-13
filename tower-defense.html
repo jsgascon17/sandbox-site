@@ -362,12 +362,12 @@
 
             <p style="color: #00ff88; margin-bottom: 8px;">SELECT MODE:</p>
             <div class="mode-grid">
-                <div class="mode-card selected" data-mode="campaign">
+                <div class="mode-card selected" data-mode="campaign" onclick="selectModeCard(this)">
                     <div class="mode-icon">20</div>
                     <div class="mode-name">Campaign</div>
                     <div class="mode-desc">Survive 20 waves to win</div>
                 </div>
-                <div class="mode-card" data-mode="endless">
+                <div class="mode-card" data-mode="endless" onclick="selectModeCard(this)">
                     <div class="mode-icon">&#x221e;</div>
                     <div class="mode-name">Endless</div>
                     <div class="mode-desc">How far can you go?</div>
@@ -376,13 +376,13 @@
 
             <p style="color: #00ff88; margin-bottom: 8px;">SELECT MAP:</p>
             <div class="map-grid">
-                <button class="map-btn-start selected" data-map="classic">Classic</button>
-                <button class="map-btn-start" data-map="serpent">Serpent</button>
-                <button class="map-btn-start" data-map="spiral">Spiral</button>
+                <button class="map-btn-start selected" data-map="classic" onclick="selectMapCard(this)" type="button">Classic</button>
+                <button class="map-btn-start" data-map="serpent" onclick="selectMapCard(this)" type="button">Serpent</button>
+                <button class="map-btn-start" data-map="spiral" onclick="selectMapCard(this)" type="button">Spiral</button>
             </div>
             <p id="mapDesc" style="color: #888; font-size: 0.85rem;">The original winding path</p>
 
-            <button class="btn" id="playBtn" style="margin-top: 15px; font-size: 1.1rem; padding: 12px 40px;">DEFEND EARTH</button>
+            <button class="btn" id="playBtn" style="margin-top: 15px; font-size: 1.1rem; padding: 12px 40px;" onclick="startGame()" type="button">DEFEND EARTH</button>
             <p style="color: #666; font-size: 0.75rem; margin-top: 10px;">Tip: Type "DOOM" during gameplay for a secret challenge!</p>
         </div>
     </div>
@@ -396,7 +396,7 @@
             <p>Final Gold: <span id="finalGold" style="color: #ffd700;">0</span></p>
             <p>Lives Remaining: <span id="finalLives" style="color: #00ff88;">0</span></p>
             <p style="color: #ffd700; font-size: 1.2rem; margin-top: 10px;">+<span id="coinsEarned">0</span> Coins Earned!</p>
-            <button class="btn" id="victoryBtn" style="margin-top: 20px;">Play Again</button>
+            <button class="btn" id="victoryBtn" style="margin-top: 20px;" onclick="startGame()" type="button">Play Again</button>
         </div>
     </div>
 
@@ -407,7 +407,7 @@
             <p style="color: #ff4444;">The aliens have invaded Earth...</p>
             <p>You reached wave <span id="deathWave" style="color: #00d4ff;">0</span></p>
             <p style="color: #ffd700; font-size: 1.1rem; margin-top: 10px;">+<span id="coinsEarnedLoss">0</span> Coins Earned</p>
-            <button class="btn" id="retryBtn" style="margin-top: 20px;">Try Again</button>
+            <button class="btn" id="retryBtn" style="margin-top: 20px;" onclick="startGame()" type="button">Try Again</button>
         </div>
     </div>
 
@@ -751,6 +751,21 @@
         let selectedHero = null;
         let selectedPlacedTower = null;
         let hoverTile = null;
+
+        // Global functions for onclick handlers in HTML (must be after gameMode/setMap are defined)
+        function selectModeCard(card) {
+            gameMode = card.dataset.mode;
+            document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        }
+
+        function selectMapCard(btn) {
+            const mapId = btn.dataset.map;
+            setMap(mapId);
+            document.querySelectorAll('.map-btn-start').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('mapDesc').textContent = MAPS[mapId].desc;
+        }
 
         // UI Elements
         const goldEl = document.getElementById('gold');
