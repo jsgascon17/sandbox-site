@@ -128,6 +128,18 @@
 
         .notification { position: fixed; top: 20px; right: 20px; background: #0f0; color: #000; padding: 12px 20px; border-radius: 10px; font-weight: bold; box-shadow: 0 5px 20px rgba(0,255,0,0.4); animation: slideIn 0.3s ease-out; z-index: 1000; font-family: 'Courier New', monospace; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Owner Stats */
+        .owner-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .owner-stat { background: #1a1a1a; border: 2px solid #333; border-radius: 8px; padding: 10px; text-align: center; }
+        .owner-stat-label { display: block; font-weight: bold; color: #f59e0b; margin-bottom: 8px; font-size: 0.85rem; }
+        .owner-stat-controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .owner-stat-controls button { width: 30px; height: 30px; border: 2px solid #f59e0b; background: #222; color: #f59e0b; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 5px; transition: all 0.2s; }
+        .owner-stat-controls button:hover { background: #f59e0b; color: #000; }
+        .owner-stat-controls span { font-size: 1.2rem; font-weight: bold; color: #fff; min-width: 30px; }
+        .owner-stat-desc { font-size: 0.7rem; color: #888; }
+        #invincibleBtn { width: auto; padding: 5px 15px; }
+        #invincibleBtn.active { background: #0f0; color: #000; border-color: #0f0; }
     </style>
 </head>
 <body>
@@ -273,6 +285,63 @@
                 <div class="panel-grid">
                     <button class="panel-action" onclick="adminAddCoins(9999999)"><span class="icon">+</span>9,999,999</button>
                     <button class="panel-action" onclick="ownerMaxEverything()"><span class="icon">⭐</span>MAX ALL</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h3>⚡ Owner Stats (Beyond Max!)</h3>
+                <div class="owner-stat-grid" id="ownerStatsGrid">
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">🔥 Fire Rate</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="adjustOwnerStat('fireRate', -1)">-</button>
+                            <span id="ownerFireRate">0</span>
+                            <button onclick="adjustOwnerStat('fireRate', 1)">+</button>
+                        </div>
+                        <span class="owner-stat-desc">+50% per level</span>
+                    </div>
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">💥 Damage</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="adjustOwnerStat('damage', -1)">-</button>
+                            <span id="ownerDamage">0</span>
+                            <button onclick="adjustOwnerStat('damage', 1)">+</button>
+                        </div>
+                        <span class="owner-stat-desc">+100% per level</span>
+                    </div>
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">💨 Speed</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="adjustOwnerStat('speed', -1)">-</button>
+                            <span id="ownerSpeed">0</span>
+                            <button onclick="adjustOwnerStat('speed', 1)">+</button>
+                        </div>
+                        <span class="owner-stat-desc">+50% per level</span>
+                    </div>
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">🎯 Hitbox Shrink</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="adjustOwnerStat('hitbox', -1)">-</button>
+                            <span id="ownerHitbox">0</span>
+                            <button onclick="adjustOwnerStat('hitbox', 1)">+</button>
+                        </div>
+                        <span class="owner-stat-desc">-10% size per level</span>
+                    </div>
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">❤️ Extra Lives</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="adjustOwnerStat('lives', -1)">-</button>
+                            <span id="ownerLives">0</span>
+                            <button onclick="adjustOwnerStat('lives', 1)">+</button>
+                        </div>
+                        <span class="owner-stat-desc">+1 starting life</span>
+                    </div>
+                    <div class="owner-stat">
+                        <span class="owner-stat-label">🛡️ Invincible</span>
+                        <div class="owner-stat-controls">
+                            <button onclick="toggleInvincible()" id="invincibleBtn">OFF</button>
+                        </div>
+                        <span class="owner-stat-desc">Can't take damage</span>
+                    </div>
                 </div>
             </div>
             <div class="panel-section">
@@ -492,7 +561,14 @@
             golden: { name: 'Golden', color: '#ffd700', accent: '#b8860b' },
             plasma: { name: 'Plasma', color: '#00ffff', accent: '#008888' },
             stealth: { name: 'Stealth', color: '#666', accent: '#333' },
-            rainbow: { name: 'Rainbow', color: 'rainbow', accent: '#fff' }
+            rainbow: { name: 'Rainbow', color: 'rainbow', accent: '#fff' },
+            // Owner exclusive skins
+            owner_galaxy: { name: 'Galaxy', color: '#8B5CF6', accent: '#5B21B6' },
+            owner_lightning: { name: 'Lightning', color: '#FBBF24', accent: '#D97706' },
+            owner_phoenix: { name: 'Phoenix', color: '#F97316', accent: '#C2410C' },
+            owner_diamond: { name: 'Diamond', color: '#60A5FA', accent: '#2563EB' },
+            owner_phantom: { name: 'Phantom', color: '#A78BFA', accent: '#7C3AED' },
+            owner_dev: { name: 'Developer', color: '#10B981', accent: '#059669' }
         };
         let currentSkin = 'classic';
 
@@ -554,11 +630,13 @@
             adminUnlocked: false,
             ownerUnlocked: false,
             customAdminCode: null,
-            adminCodeEnabled: true
+            adminCodeEnabled: true,
+            ownerStats: { fireRate: 0, damage: 0, speed: 0, hitbox: 0, lives: 0, invincible: false }
         };
         // Migrate old saves
         if (!saveData.ownedSkins) saveData.ownedSkins = ['classic'];
         if (!saveData.equippedSkin) saveData.equippedSkin = 'classic';
+        if (!saveData.ownerStats) saveData.ownerStats = { fireRate: 0, damage: 0, speed: 0, hitbox: 0, lives: 0, invincible: false };
         function save() { localStorage.setItem('spaceInvadersSave2', JSON.stringify(saveData)); }
 
         // ============================================
@@ -621,11 +699,26 @@
         coinsDisplay.textContent = saveData.coins;
 
         // ============================================
-        // UPGRADE EFFECTS
+        // UPGRADE EFFECTS (includes owner stat bonuses)
         // ============================================
-        function getDamageMultiplier() { return 1 + saveData.upgrades.damage * UPGRADES.damage.effect; }
-        function getFireRateMultiplier() { return 1 - saveData.upgrades.fireRate * UPGRADES.fireRate.effect * 0.8; }
-        function getSpeedMultiplier() { return 1 + saveData.upgrades.speed * UPGRADES.speed.effect; }
+        function getDamageMultiplier() {
+            // Base damage + upgrade bonus + owner bonus (100% per level)
+            return 1 + saveData.upgrades.damage * UPGRADES.damage.effect + saveData.ownerStats.damage * 1.0;
+        }
+        function getFireRateMultiplier() {
+            // Lower = faster. Base - upgrade reduction - owner bonus (50% faster per level)
+            let rate = 1 - saveData.upgrades.fireRate * UPGRADES.fireRate.effect * 0.8;
+            rate = rate - saveData.ownerStats.fireRate * 0.1; // 10% faster per level
+            return Math.max(0.05, rate); // Cap at 95% reduction
+        }
+        function getSpeedMultiplier() {
+            // Base speed + upgrade bonus + owner bonus (50% per level)
+            return 1 + saveData.upgrades.speed * UPGRADES.speed.effect + saveData.ownerStats.speed * 0.5;
+        }
+        function getHitboxShrink() {
+            // Returns multiplier (1.0 = normal, 0.5 = half size)
+            return Math.max(0.2, 1 - saveData.ownerStats.hitbox * 0.1);
+        }
         function getShieldHits() { return saveData.upgrades.shield; }
         function getDroneCount() { return saveData.upgrades.drone; }
         function getMagnetRange() { return saveData.upgrades.magnet * UPGRADES.magnet.effect; }
@@ -738,6 +831,32 @@
         function drawPlayer() {
             const skin = SHIP_SKINS[currentSkin];
             let mainColor = skin.color === 'rainbow' ? `hsl(${(Date.now() / 20) % 360}, 100%, 50%)` : skin.color;
+
+            // Owner invincibility effect (glowing aura)
+            if (saveData.ownerStats.invincible) {
+                ctx.strokeStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, 40, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // Hitbox shrink indicator
+            if (saveData.ownerStats.hitbox > 0) {
+                const shrink = getHitboxShrink();
+                const hitW = player.width * shrink;
+                const hitH = player.height * shrink;
+                const hitX = player.x + (player.width - hitW) / 2;
+                const hitY = player.y + (player.height - hitH) / 2;
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.strokeRect(hitX, hitY, hitW, hitH);
+                ctx.setLineDash([]);
+            }
 
             // Shield from upgrades
             const shieldHits = activeEffects.upgradeShield || 0;
@@ -936,11 +1055,24 @@
                 }
             });
 
-            // Alien bullets hitting player
+            // Alien bullets hitting player (with hitbox shrink)
+            const hitboxShrink = getHitboxShrink();
+            const hitboxW = player.width * hitboxShrink;
+            const hitboxH = player.height * hitboxShrink;
+            const hitboxX = player.x + (player.width - hitboxW) / 2;
+            const hitboxY = player.y + (player.height - hitboxH) / 2;
+
             alienBullets.forEach((bullet, index) => {
-                if (bullet.x < player.x + player.width && bullet.x + BULLET_WIDTH > player.x &&
-                    bullet.y < player.y + player.height && bullet.y + BULLET_HEIGHT > player.y) {
+                if (bullet.x < hitboxX + hitboxW && bullet.x + BULLET_WIDTH > hitboxX &&
+                    bullet.y < hitboxY + hitboxH && bullet.y + BULLET_HEIGHT > hitboxY) {
                     alienBullets.splice(index, 1);
+
+                    // Check for owner invincibility
+                    if (saveData.ownerStats.invincible) {
+                        playSound('bossHit'); // Still make a sound
+                        return; // No damage taken
+                    }
+
                     damageTakenThisWave = true;
 
                     if (activeEffects.shield > 0) {
@@ -1024,7 +1156,9 @@
 
         function startGame() {
             initAudio();
-            score = 0; lives = 3; wave = 1;
+            score = 0;
+            lives = 3 + saveData.ownerStats.lives; // Base 3 + owner bonus lives
+            wave = 1;
             alienSpeed = 1; alienShootChance = 0.005;
             bullets = []; alienBullets = []; powerups = [];
             boss = null; bossActive = false; gamePaused = false;
@@ -1352,9 +1486,9 @@
         }
 
         function adminUnlockAllAchievements() {
-            ACHIEVEMENTS.forEach(a => {
-                if (!saveData.achievements.includes(a.id)) {
-                    saveData.achievements.push(a.id);
+            Object.keys(ACHIEVEMENTS).forEach(id => {
+                if (!saveData.achievements.includes(id)) {
+                    saveData.achievements.push(id);
                 }
             });
             playSound('powerup');
@@ -1395,6 +1529,7 @@
             const currentCode = saveData.customAdminCode || 'jsg1708admin';
             document.getElementById('currentAdminCode').textContent = saveData.adminCodeEnabled ? currentCode : currentCode + ' (DISABLED)';
             renderOwnerSkins();
+            updateOwnerStatsDisplay();
             document.getElementById('ownerOverlay').classList.remove('hidden');
         }
         function hideOwner() { document.getElementById('ownerOverlay').classList.add('hidden'); }
@@ -1479,17 +1614,60 @@
                 if (!saveData.ownedSkins.includes(s.id)) saveData.ownedSkins.push(s.id);
             });
             // All achievements
-            ACHIEVEMENTS.forEach(a => {
-                if (!saveData.achievements.includes(a.id)) saveData.achievements.push(a.id);
+            Object.keys(ACHIEVEMENTS).forEach(id => {
+                if (!saveData.achievements.includes(id)) saveData.achievements.push(id);
             });
             playSound('levelUp');
             save();
             showNotification('EVERYTHING MAXED!');
         }
 
-        // Initialize admin/owner buttons on load
+        // ============================================
+        // OWNER STATS SYSTEM
+        // ============================================
+        function adjustOwnerStat(stat, delta) {
+            let newValue = saveData.ownerStats[stat] + delta;
+            // Set limits: fireRate, damage, speed, hitbox, lives can go 0-20
+            if (newValue < 0) newValue = 0;
+            if (newValue > 20) newValue = 20;
+            saveData.ownerStats[stat] = newValue;
+
+            // Update display
+            const displayId = 'owner' + stat.charAt(0).toUpperCase() + stat.slice(1);
+            document.getElementById(displayId).textContent = newValue;
+
+            playSound('buy');
+            save();
+            showNotification(stat.charAt(0).toUpperCase() + stat.slice(1) + ' set to ' + newValue);
+        }
+
+        function toggleInvincible() {
+            saveData.ownerStats.invincible = !saveData.ownerStats.invincible;
+            const btn = document.getElementById('invincibleBtn');
+            btn.textContent = saveData.ownerStats.invincible ? 'ON' : 'OFF';
+            btn.classList.toggle('active', saveData.ownerStats.invincible);
+            playSound(saveData.ownerStats.invincible ? 'powerup' : 'hit');
+            save();
+            showNotification('Invincibility ' + (saveData.ownerStats.invincible ? 'ENABLED' : 'disabled'));
+        }
+
+        function updateOwnerStatsDisplay() {
+            document.getElementById('ownerFireRate').textContent = saveData.ownerStats.fireRate;
+            document.getElementById('ownerDamage').textContent = saveData.ownerStats.damage;
+            document.getElementById('ownerSpeed').textContent = saveData.ownerStats.speed;
+            document.getElementById('ownerHitbox').textContent = saveData.ownerStats.hitbox;
+            document.getElementById('ownerLives').textContent = saveData.ownerStats.lives;
+            const btn = document.getElementById('invincibleBtn');
+            btn.textContent = saveData.ownerStats.invincible ? 'ON' : 'OFF';
+            btn.classList.toggle('active', saveData.ownerStats.invincible);
+        }
+
+        // Initialize admin/owner buttons and equipped skin on load
         if (saveData.adminUnlocked) document.getElementById('adminBtn').classList.add('visible');
         if (saveData.ownerUnlocked) document.getElementById('ownerBtn').classList.add('visible');
+        if (saveData.equippedSkin && SHIP_SKINS[saveData.equippedSkin]) {
+            currentSkin = saveData.equippedSkin;
+        }
     </script>
 </body>
 </html>
